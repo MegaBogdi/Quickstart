@@ -53,13 +53,12 @@ public class Gains {
         public static double tD=0.000014;
         public static double tS=0.04;
         public static double tT=0.095;
-        public static double TUR_POS_EPS =50;
+        public static double TUR_POS_EPS =30;
         public static double TUR_VEL_EPS =5000;
-        // Keep soft limits in raw encoder ticks (no extra offset). +/-pi is ~19267 ticks.
         public static int MAX_TICKS =16000;
         public static int MIN_TICKS =-17500;
 
-        public static  double TURRET_TOLERANCE = 0.1;
+        public static  double TURRET_TOLERANCE = 0.08;
 
     }
     @Configurable
@@ -69,7 +68,7 @@ public class Gains {
         public static double kD =0.0;  // try to keep 0
         public static double kS = 0.151;   //Static power;
         public static  double kV=0.000185;  // pure feedForward
-        public static double RPM_EPS = 100; // RPM TOLERANCE
+        public static double RPM_EPS = 30; // RPM TOLERANCE
     }
 
 

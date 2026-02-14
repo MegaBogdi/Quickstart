@@ -45,7 +45,7 @@ public class IOSubsystem extends SubsystemBase {
     private final CachingDcMotorEx launcher1;
     private final CachingDcMotorEx launcher2;
     private final NormalizedColorSensor snsr1;
-    private final CachingServo led;
+    //private final CachingServo led;
 
 
     public boolean teamIsRed=false;
@@ -55,7 +55,7 @@ public class IOSubsystem extends SubsystemBase {
     public static double redY=125;
     public static double testPower;
     private int space = 2730;//2730;
-    private final double[] BLUE_GOAL = {10.5,134};
+    private final double[] BLUE_GOAL = {9,134};
     private final double[] RED_GOAL = {135.5,134};
 
     private final double tick_per_rotation = 8192;
@@ -135,8 +135,8 @@ public class IOSubsystem extends SubsystemBase {
         launcher2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         //==========================LED===================================
-        led = new CachingServo(hMap.get(Servo.class,"led"));
-        led.setPosition(0);
+        //led = new CachingServo(hMap.get(Servo.class,"led"));
+        //led.setPosition(0);
         //==========================SERVO=========================================
 
         push1 = new CachingServo(hMap.get(Servo.class,"pushA"));
@@ -194,7 +194,7 @@ public class IOSubsystem extends SubsystemBase {
     }
 
     public void setLed(double color){
-        led.setPosition(color);
+        //led.setPosition(color);
     }
 
 /*
@@ -524,7 +524,7 @@ public class IOSubsystem extends SubsystemBase {
         if (dir>0){climb();}else{climbDown();}
     }
     public boolean isSorterReady(){
-        if (Math.abs(sorter.getCurrentPosition()-targetPos)< SORT_POS_EPS +40){
+        if (Math.abs(sorter.getCurrentPosition()-targetPos)< SORT_POS_EPS+40){
             return true;
         } else {return false;}
 

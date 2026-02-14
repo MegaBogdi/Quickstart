@@ -13,6 +13,7 @@ import com.arcrobotics.ftclib.command.WaitUntilCommand;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Subsystems.IOSubsystem;
 
 public class Utils {
@@ -38,7 +39,7 @@ public class Utils {
                 new InstantCommand(() -> succesDemand = IO.getDemanded()),
                 new ConditionalCommand(
                         new SequentialCommandGroup(
-                                new WaitUntilCommand(() -> (IO.isSorterReady() && IO.isRPMready())),
+                                new WaitUntilCommand(() -> IO.isSorterReady() && IO.isRPMready()&&IO.isTurretReady(alpha, follower)),
                                 quickPush
                         ),
                         new InstantCommand(() -> IO.demand_index += 1),
@@ -62,17 +63,14 @@ public class Utils {
         Command autoOutake = new ParallelCommandGroup(
                 autoAim,
                 interp,
-                new ConditionalCommand(
-                        Demand,
-                        new InstantCommand(() -> {}),
-                        () -> IO.isTurretReady(alpha, follower)
-                )
+                Demand
+
         );
 
         Command stopAutoOutake = new InstantCommand(() -> {
             IO.setMotorRPM(1750);
-            IO.setHood(0.1);
-            IO.setTargetTurretRads(0);
+            IO.setHood(IO.SERVO_MIN_LIMIT);
+            IO.setTargetTurretRads(IO.teamIsRed? Math.toRadians(-90):Math.toRadians(90));
             IO.setPush(IO.PUSH_MIN_LIMIT);
         });                   // complete?
         return new SequentialCommandGroup(
@@ -101,12 +99,12 @@ public class Utils {
                                 new RunCommand(()->IO.start_intake()),
                                 new RepeatCommand(new ConditionalCommand( // if ball incoming
                                         new SequentialCommandGroup(
-                                                new WaitCommand(50),
+                                                new WaitCommand(20),
                                                 new InstantCommand(() -> IO.regist()),// register the incoming ball in memory
                                                 new InstantCommand(() -> IO.climb()), // phisicly spin the sorter
                                                 new WaitUntilCommand(() -> !IO.isOcupied())
                                         ),
-                                        new WaitCommand(20),   // do nothing
+                                        new InstantCommand(),   // do nothing
                                         () -> (IO.isOcupied()) // if recived ball
                                 ))
 
@@ -122,8 +120,13 @@ public class Utils {
                 new SequentialCommandGroup(
                         new ParallelDeadlineGroup(
                                 new WaitUntilCommand(()->IO.checkMotifFind(id)),
+                                new InstantCommand(()->IO.setLed(0.388)),
                                 new RunCommand(()-> id =IO.getMotif())
                         ).withTimeout(timeout),
+                        new InstantCommand(()->{
+                           if (id == -1){IO.setLed(0.277);}
+                           else{IO.setLed(0.500);}
+                        }),
                         new InstantCommand(()->{IO.motifTranslate(id);IO.stopLimeLight();})
                 );
 
@@ -170,7 +173,11 @@ public class Utils {
 
 
     public Pose mirror(Pose pose){
-        return new Pose( 145-pose.getX(), 145-pose.getY(), Math.toRadians(180)-pose.getHeading());
+        return new Pose(
+                145 - pose.getX(),
+                pose.getY(),
+                AngleUnit.normalizeRadians(Math.PI - pose.getHeading())
+        );
     }
 
 

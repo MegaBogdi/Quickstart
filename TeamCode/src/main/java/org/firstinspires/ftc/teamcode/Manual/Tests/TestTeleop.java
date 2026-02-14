@@ -66,9 +66,9 @@ public class TestTeleop extends CommandOpMode {
         led = hardwareMap.get(Servo.class,"led");
 
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
-                .whenPressed(()->setPush(0.156));
+                .whenPressed(()->hood.setPosition(0));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
-                .whenPressed(()->setPush(0.056));
+                .whenPressed(()->hood.setPosition(0.1));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
                 .whenPressed(()->setPush(push1.getPosition()-0.001));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
@@ -97,14 +97,15 @@ public class TestTeleop extends CommandOpMode {
         hubs.forEach(LynxModule::clearBulkCache);
         super.run();
 
-        IO.targetTurret += IO.tick2rads((int)driver1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) * 2);
-        IO.targetTurret -= IO.tick2rads((int) (driver1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) * 2));
-
-        telemetry.addData("TicksTarget",IO.getTurretTicks());
-        telemetry.addData("Ticks2Rads",IO.tick2rads(IO.getTurretTicks()));
-        telemetry.addData("Rads2Ticks",IO.rads2ticks(IO.targetTurret));
-        telemetry.addData("Transform",IO.rads2ticks(IO.tick2rads(IO.getTurretTicks())));
-        telemetry.addData("Degrees",Math.toDegrees(IO.tick2rads(IO.getTurretTicks())));
+        //IO.targetTurret += IO.tick2rads((int)driver1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) * 2);
+        //IO.targetTurret -= IO.tick2rads((int) (driver1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) * 2));
+//
+//        telemetry.addData("TicksTarget",IO.getTurretTicks());
+//        telemetry.addData("Ticks2Rads",IO.tick2rads(IO.getTurretTicks()));
+//        telemetry.addData("Rads2Ticks",IO.rads2ticks(IO.targetTurret));
+//        telemetry.addData("Transform",IO.rads2ticks(IO.tick2rads(IO.getTurretTicks())));
+//        telemetry.addData("Degrees",Math.toDegrees(IO.tick2rads(IO.getTurretTicks())));
+        telemetry.addData("hood",hood.getPosition());
 
         IO.update_turret_pid();
 
