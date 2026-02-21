@@ -28,7 +28,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import java.util.List;
 
 @Configurable
-@Autonomous(name = "AutonomieRED_9_SHORT_SAFE", group = "Auto RED")
+@Autonomous(name = "AutonomieBLUE_9_SHORT", group = "Auto Blue")
 public class AutoBLUE9_SHORT_SAFE extends CommandOpMode {
     private Pose startPose = new Pose(110.729, 136.523, Math.toRadians(0));
     private Pose shootPos = new Pose(93.907, 85.776, Math.toRadians(0));

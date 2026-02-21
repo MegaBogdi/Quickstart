@@ -1,13 +1,10 @@
 package org.firstinspires.ftc.teamcode.Manual.Tests;
 
 import com.arcrobotics.ftclib.command.CommandOpMode;
-import com.arcrobotics.ftclib.command.InstantCommand;
-import com.arcrobotics.ftclib.command.button.Trigger;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.lynx.LynxModule;
-import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -31,12 +28,16 @@ public class TestTeleop extends CommandOpMode {
 
     private CachingCRServo turret;
 
-    private CachingServo park;
+    private CachingServo park1;
+    private CachingServo park2;
     private Servo led;
     private double color;
 
     private IOSubsystem IO;
 
+
+    public static double TEST = 0.1711;
+    public static double TEST2 = 0.0052;
 
     @Override
     public void initialize() {
@@ -51,15 +52,17 @@ public class TestTeleop extends CommandOpMode {
 
         push1 = new CachingServo(hardwareMap.get(Servo.class,"pushA"));
         push2 = new CachingServo(hardwareMap.get(Servo.class,"pushB"));
-        push2.setDirection(Servo.Direction.REVERSE);
-
+        //push2.setDirection(Servo.Direction.REVERSE);
+        setPush(0.056);
 
         hood = new CachingServo(hardwareMap.get(Servo.class,"hood"));
-        hood.setDirection(Servo.Direction.REVERSE);
+        //hood.setDirection(Servo.Direction.REVERSE);
         //hood.setPosition(0);
 
-        park = new CachingServo(hardwareMap.get(Servo.class,"park"));
-        park.setDirection(Servo.Direction.REVERSE);
+        park1 = new CachingServo(hardwareMap.get(Servo.class,"parkA"));
+        //park1.setDirection(Servo.Direction.REVERSE);
+        park2 = new CachingServo(hardwareMap.get(Servo.class,"parkB"));
+        //park2.setDirection(Servo.Direction.REVERSE);
 
         turret = new CachingCRServo(hardwareMap.get(CRServo.class,"turet"));
 
@@ -68,19 +71,22 @@ public class TestTeleop extends CommandOpMode {
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whenPressed(()->hood.setPosition(0));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
-                .whenPressed(()->hood.setPosition(0.1));
+                .whenPressed(()->hood.setPosition(0.35));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
                 .whenPressed(()->setPush(push1.getPosition()-0.001));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
                 .whenPressed(()->setPush(push1.getPosition()+0.001));
+
+        double offset = 0.026;
         driver1.getGamepadButton(GamepadKeys.Button.A)
-                .whenPressed(()->color=0);
+                .whenPressed(()->setPark(0.5));
         driver1.getGamepadButton(GamepadKeys.Button.B)
-                .whenPressed(()->color+=0.01);
+                .whenPressed(()->setPark(0.1));
         driver1.getGamepadButton(GamepadKeys.Button.X)
-                .whenPressed(()->color-=0.01);
+                .whenPressed(()->setPark(1));
         driver1.getGamepadButton(GamepadKeys.Button.Y)
-                .whileHeld(()->color+=0.0005);
+                .whenPressed(()->setPark(0));
+
 
 
 
@@ -99,6 +105,8 @@ public class TestTeleop extends CommandOpMode {
 
         //IO.targetTurret += IO.tick2rads((int)driver1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) * 2);
         //IO.targetTurret -= IO.tick2rads((int) (driver1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) * 2));
+
+
 //
 //        telemetry.addData("TicksTarget",IO.getTurretTicks());
 //        telemetry.addData("Ticks2Rads",IO.tick2rads(IO.getTurretTicks()));
@@ -106,9 +114,9 @@ public class TestTeleop extends CommandOpMode {
 //        telemetry.addData("Transform",IO.rads2ticks(IO.tick2rads(IO.getTurretTicks())));
 //        telemetry.addData("Degrees",Math.toDegrees(IO.tick2rads(IO.getTurretTicks())));
         telemetry.addData("hood",hood.getPosition());
+        telemetry.addData("push:",push1.getPosition());
 
-        IO.update_turret_pid();
-
+        //IO.update_turret_pid();
         telemetry.update();
 
     }
@@ -116,5 +124,9 @@ public class TestTeleop extends CommandOpMode {
     public void setPush(double pos){
         push1.setPosition(pos);
         push2.setPosition(pos);
+    }
+    public void setPark(double pos){
+        park1.setPosition(pos);
+        park2.setPosition(pos);
     }
 }

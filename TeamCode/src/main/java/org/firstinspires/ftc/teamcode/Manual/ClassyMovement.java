@@ -4,6 +4,7 @@ package org.firstinspires.ftc.teamcode.Manual;
 import static org.firstinspires.ftc.teamcode.Manual.Drawing.drawDebug;
 import static org.firstinspires.ftc.teamcode.Manual.Drawing.drawRobot;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Auto.SharedUtils;
 
 import com.arcrobotics.ftclib.command.Command;
@@ -45,6 +46,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ClassyMovement extends CommandOpMode {
 
     private List<LynxModule> hubs;
+
+    private IMU imu;
     private ElapsedTime timer;
     private boolean ALLIANCE = false; // Default to False (Blue)
     private IOSubsystem IO;
@@ -82,13 +85,6 @@ public class ClassyMovement extends CommandOpMode {
         timer = new ElapsedTime();
         timer.startTime();
 
-//        imu = hardwareMap.get(IMU.class, "imu");
-//        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
-//                RevHubOrientationOnRobot.LogoFacingDirection.RIGHT,
-//                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD));
-//        imu.initialize(parameters);
-//        imu.resetYaw();
-
 
 
         // -------------------------------------------------------------------------
@@ -114,7 +110,9 @@ public class ClassyMovement extends CommandOpMode {
         // 4. COMMAND BINDINGS
         // -------------------------------------------------------------------------
         register(IO);
+
         IO.close();
+        IO.startLimeLight();
 
         Command quickPush = new SequentialCommandGroup(
                 new InstantCommand(() -> IO.setPush(IO.PUSH_MAX_LIMIT)),
@@ -153,15 +151,12 @@ public class ClassyMovement extends CommandOpMode {
                 new InstantCommand(() -> {
                     IO.motifTranslate(id);
                     IO.stopLimeLight();
-                }),
-                new InstantCommand(() -> {
-                    if (IO.checkMotifFind(id)) {IO.setLed(0.5);} else {IO.setLed(0.27);}
                 })
         );
 
         Command scan = new ConditionalCommand(
             new ConditionalCommand(
-                new InstantCommand(()->{IO.setLed(0.5);IO.motifTranslate(id);IO.stopLimeLight();motified=true;}),
+                new InstantCommand(()->{IO.motifTranslate(id);IO.stopLimeLight();motified=true;}),
                 new RunCommand(() -> {id = IO.getMotif(); gamepad1.rumble(200);telemetryA.addLine("searching");}),
                 ()->IO.checkMotifFind(id)
             ),
@@ -178,6 +173,16 @@ public class ClassyMovement extends CommandOpMode {
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
                 .and(new Trigger(() -> !driver1.isDown(GamepadKeys.Button.BACK)))
                 .whenActive(() -> IO.setMotorRPM(IO.returnTargetRPM() - 500));
+
+        driver1.getGamepadButton(GamepadKeys.Button.X)
+                .and(new Trigger(() -> !driver1.isDown(GamepadKeys.Button.BACK)))
+                .whileActiveContinuous(() -> {
+                    IO.startLimeLight();
+                    IO.targetTurret = 0;
+                    LimePoseSync.sync(follower, IO.lime, IO.tick2rads(IO.getTurretTicks()));
+                    follower.update();
+                })
+                .whenInactive(() -> IO.stopLimeLight());
 
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
                 .and(new Trigger(() -> !driver1.isDown(GamepadKeys.Button.BACK)))
@@ -214,7 +219,7 @@ public class ClassyMovement extends CommandOpMode {
 
         driver1.getGamepadButton(GamepadKeys.Button.START)
                 .and(new Trigger(() -> driver1.isDown(GamepadKeys.Button.X)))
-                .whenActive(() -> follower.setPose(ALLIANCE ? defaultPoseRED : defaultPoseBLUE))
+                .whenActive(() ->  { follower.setPose(ALLIANCE ? defaultPoseRED : defaultPoseBLUE); } )
                 .whenActive(() -> gamepad1.rumble(400));
 
         driver1.getGamepadButton(GamepadKeys.Button.A)
@@ -243,7 +248,7 @@ public class ClassyMovement extends CommandOpMode {
                         new InstantCommand(() -> IO.start_intake()),
                         new ConditionalCommand(
                                 new SequentialCommandGroup(
-                                        //new WaitCommand(50),
+                                        //new WaitCommand(50), // here for antijaming
                                         new InstantCommand(() -> IO.regist()),
                                         new InstantCommand(() -> IO.climb()),
                                         new WaitUntilCommand(() -> !IO.isOcupied())
@@ -273,12 +278,18 @@ public class ClassyMovement extends CommandOpMode {
                 .whileActiveContinuous(startIntake)
                 .whenInactive(stopIntake);
 
+        driver1.getGamepadButton(GamepadKeys.Button.B)
+                .and(new Trigger(()->!driver1.isDown(GamepadKeys.Button.BACK)))
+                .whenActive(()->IO.togglePark());
+
         Command interp = new InstantCommand(() -> {
             double dist = IO.getDistanceOdom(follower.getPose());
             interpValues = IO.getInterpolatedValues(dist);
             IO.setHood(interpValues[1]);
             IO.setMotorRPM(interpValues[0]);
         });
+
+        Command refreshPosition = new InstantCommand(() -> LimePoseSync.sync(follower, IO.lime, IO.tick2rads(IO.getTurretTicks())));
 
 
         Command Demand = new SequentialCommandGroup(
@@ -312,15 +323,11 @@ public class ClassyMovement extends CommandOpMode {
                 IO.setHood(0.1);
                 IO.setTargetTurretRads(0);
             }
-            if (IO.ocupied()<3){
-                IO.setLed(0);
-            } else {IO.setLed(0.5);}
         });
 
         new Trigger(() -> driver1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) >= 0.2)
                 .and(new Trigger(() -> !IO.jam))
                 .whenActive(new InstantCommand(() -> IO.close()))
-                .whenActive(new InstantCommand(() -> IO.setLed(0)))
                 .whileActiveContinuous(autoOutake)
                 .whileActiveContinuous(()->decideBottleneck())
                 .whenInactive(stopAutoOutake);
@@ -409,9 +416,10 @@ public class ClassyMovement extends CommandOpMode {
         telemetryA.addData("angle error", Math.toDegrees(IO.testTurretReady(IO.getAngle(follower.getPose()),follower)));
         telemetryA.addData("heading", Math.toDegrees(follower.getPose().getHeading()));
         chassis.updateSpeeds(driver1.getLeftY(), driver1.getLeftX(), driver1.getRightX(), heading - headingOffset + Math.toRadians(90));
-        telemetryA.debug("x",follower.getPose().getX(), "y",follower.getPose().getX());
+        telemetryA.addData("x",follower.getPose().getX());
+        telemetryA.addData("y",follower.getPose().getY());
 
-        telemetryA.addData("sorter pos", IO.returnSorterPos());
+
 
 //        telemetryA.debug(String.format("SORTER: target=%.4f  pos=%.4f  error=%.4f",
 //                IO.returnTargetPos(), IO.returnSorterPos(), (IO.returnTargetPos() + IO.returnSorterPos())));
@@ -424,7 +432,7 @@ public class ClassyMovement extends CommandOpMode {
 //
 //
 
-
+        telemetryA.addData("park",IO.park1.getPosition());
         telemetryA.update(telemetry);
 
 
@@ -445,8 +453,8 @@ public class ClassyMovement extends CommandOpMode {
 
 
     public void windUp() {
-        if (gamepad1.right_trigger < 0.2) {
-            alpha = IO.getAngle(follower.getPose());
+        if (gamepad1.right_trigger < 0.2 && !driver1.isDown(GamepadKeys.Button.X)) {
+            double alpha = IO.getAngle(follower.getPose());
             IO.setTargetTurretRads(IO.turretCommandFromGoalAngle(alpha, follower.getPose()));
             IO.setMotorRPM(1500);
         }

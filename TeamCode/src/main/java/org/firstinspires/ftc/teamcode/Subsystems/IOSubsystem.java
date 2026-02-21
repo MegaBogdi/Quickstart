@@ -21,6 +21,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
@@ -33,12 +34,13 @@ import dev.frozenmilk.dairy.cachinghardware.CachingServo;
 public class IOSubsystem extends SubsystemBase {
 
     private HardwareMap hmap;
-    public CachingServo park;
+    public CachingServo park1;
+    public CachingServo park2;
     private final CachingCRServo turret;
     private final CachingServo push1;
     private final CachingServo push2;
     private final CachingServo hood;
-    private final Limelight3A lime;
+    public final Limelight3A lime;
 
     public final CachingDcMotorEx sorter;
     private final CachingDcMotorEx collector;
@@ -55,7 +57,7 @@ public class IOSubsystem extends SubsystemBase {
     public static double redY=125;
     public static double testPower;
     private int space = 2730;//2730;
-    private final double[] BLUE_GOAL = {9,134};
+    private final double[] BLUE_GOAL = {5.5,134};
     private final double[] RED_GOAL = {135.5,134};
 
     private final double tick_per_rotation = 8192;
@@ -72,13 +74,14 @@ public class IOSubsystem extends SubsystemBase {
     public int[] MOTIF = new int[3];
     public int demand_index;
     public boolean nowOpen = false;
+    public boolean nowParked = false;
     public boolean demanding = false; // temportal latch for demanding
     public boolean climbing = false; // temportal latch for climb
     public double   SERVO_MIN_LIMIT = 0;
     public static double SERVO_MAX_LIMIT = 0.35;
 
-    public double PUSH_MIN_LIMIT = 0.056;
-    public double PUSH_MAX_LIMIT = 0.156;
+    public double PUSH_MIN_LIMIT = 0.053;
+    public double PUSH_MAX_LIMIT = 0.1711;
 
     private double jamStart;
     public boolean jam;
@@ -102,7 +105,7 @@ public class IOSubsystem extends SubsystemBase {
     private double sorterProfileAccelDist = 0.0;
 
 
-
+    private VoltageSensor myControlHubVoltageSensor;
 
 
 
@@ -115,6 +118,9 @@ public class IOSubsystem extends SubsystemBase {
         ALL[2] = 0;        MOTIF[2] = 1;
 
 //===========================MOTOR==================================================
+
+
+        myControlHubVoltageSensor = hMap.get(VoltageSensor.class, "Control Hub");
 
         collector = new CachingDcMotorEx((hMap.get(DcMotorEx.class, "coll")));
         collector.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -150,8 +156,11 @@ public class IOSubsystem extends SubsystemBase {
         hood.setPosition(SERVO_MIN_LIMIT);
 
 
-        park = new CachingServo(hMap.get(Servo.class,"park"));
-        park.setDirection(Servo.Direction.REVERSE);
+        park1 = new CachingServo(hMap.get(Servo.class,"parkA"));
+        //park1.setDirection(Servo.Direction.REVERSE);
+        park2 = new CachingServo(hMap.get(Servo.class,"parkB"));
+        park2.setDirection(Servo.Direction.REVERSE);
+        setPark(0);
 
         //=====================CRSERVO ======================================
         turret = new CachingCRServo(hMap.get(CRServo.class, "turet"));
@@ -211,8 +220,8 @@ public class IOSubsystem extends SubsystemBase {
     };*/
 
     double[][] shootingData = {
-            {108,2150,0},
-            {200,2550,0.2},
+            {108,2130,0},
+            {200,2530,0.2},
             {231, 2600, 0.2},
             {312,3000,0.23},
             {343,3150,0.27}
@@ -257,6 +266,21 @@ public class IOSubsystem extends SubsystemBase {
     }
     public double getTurretVelocity(){
         return launcher1.getVelocity();
+    }
+
+    public void setPark(double pos){
+        park1.setPosition(pos);
+        park2.setPosition(pos);
+    }
+
+    public void togglePark(){
+        if (nowParked){
+            setPark(0);
+        } else {
+            setPark(0.5);
+        }
+        nowParked = !nowParked;
+
     }
 
 
@@ -524,7 +548,7 @@ public class IOSubsystem extends SubsystemBase {
         if (dir>0){climb();}else{climbDown();}
     }
     public boolean isSorterReady(){
-        if (Math.abs(sorter.getCurrentPosition()-targetPos)< SORT_POS_EPS+40){
+        if (Math.abs(sorter.getCurrentPosition()-targetPos)< SORT_POS_EPS+60){
             return true;
         } else {return false;}
 
@@ -718,7 +742,9 @@ public class IOSubsystem extends SubsystemBase {
         if (currentTurret > MAX_TICKS){if(output>0){output=0;}} //targetTurret= tick2rads(MIN_TICKS);} //CLAMP POWER IF IT GETS OUT OF BOUNDS but let it only exit
         if (currentTurret < MIN_TICKS){if(output<0){output=0;}} //targetTurret = tick2rads(MAX_TICKS);}
 
-        output = Math.max(-1,Math.min(output,1));                   //CLAMP POWER
+        output = Math.max(-1,Math.min(output,1)); //CLAMP POWER
+
+
         turret.setPower(output);
     }
     public void testTS(){

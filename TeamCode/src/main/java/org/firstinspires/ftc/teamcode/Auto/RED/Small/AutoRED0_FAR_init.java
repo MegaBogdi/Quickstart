@@ -27,7 +27,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import java.util.List;
 
 @Configurable
-@Autonomous(name = "AutonomieRED0_FAR_init", group = "Auto red")
+@Autonomous(name = "AutonomieRED0_FAR_init", group = "Auto Red")
 public class AutoRED0_FAR_init extends CommandOpMode {
     // Pedro visualizer poses (mapped to a similar route structure)
     private Pose startPose = new Pose(85.72897196261682, 7.102803738317757, Math.toRadians(0));

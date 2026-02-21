@@ -124,7 +124,7 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
         shootFarToSpike3Path = follower.pathBuilder()
                 .addPath(new BezierCurve(
                         shootFarPos,
-                        new Pose(52.136, 38.360),
+                        new Pose(52.136, 42.360),
                         spike3Pos
                 ))
                 .setConstantHeadingInterpolation(Math.toRadians(180))
@@ -178,14 +178,11 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
                                 utils.newMotify(1000),
                                 new InstantCommand(() -> IO.setTargetTurretRads(Math.toRadians(90)))
                         ),
-                        utils.newAutoOutake(4500),
+                        utils.newAutoOutake(5000),
                         new FollowPathCommand(follower, startToSpike2Path)
-                                .beforeStarting(()->IO.setLed(1))
                                 .beforeStarting(() -> follower.setMaxPower(0.55))
-                                .alongWith(utils.newStartIntake(4000))
-                                .andThen(utils.newStopIntake())
-                                .andThen(new InstantCommand(()->{if (IO.ocupied()>=3){IO.setLed(0.5);} else {IO.setLed(0.277);}})),
-
+                                .alongWith(utils.newStartIntake(4500))
+                                .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, spike2ToLeverPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new WaitCommand(500),
@@ -193,19 +190,15 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         utils.newAutoOutake(4500),
                         new FollowPathCommand(follower, shootFarToSpike3Path)
-                                .beforeStarting(()->IO.setLed(1))
                                 .alongWith(utils.newStartIntake(5000))
                                 .beforeStarting(() -> follower.setMaxPower(0.45))
-                                .andThen(utils.newStopIntake())
-                                .andThen(new InstantCommand(()->{if (IO.ocupied()>=3){IO.setLed(0.5);} else {IO.setLed(0.277);}})),
+                                .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, spike3ToShootShortPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         utils.newAutoOutake(3000),
                         new FollowPathCommand(follower, shootShortToSpike1Path)
-                                .beforeStarting(()->IO.setLed(1))
                                 .beforeStarting(() -> follower.setMaxPower(0.5))
-                                .alongWith(utils.newStartIntake(3500))
-                                .andThen(new InstantCommand(()->{if (IO.ocupied()>=3){IO.setLed(0.5);} else {IO.setLed(0.277);}}))
+                                .alongWith(utils.newStartIntake(4500))
                                 .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, spike1ToShootShortPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
@@ -214,7 +207,7 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
                         new InstantCommand(()->IO.setTargetTurretRads(0)),
                         new FollowPathCommand(follower, shootShortToParkPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        new InstantCommand(() -> {SharedUtils.sharedPose = follower.getPose(); IO.setLed(0.722);})
+                        new InstantCommand(() -> {SharedUtils.sharedPose = follower.getPose();})
                 )
         );
     }
