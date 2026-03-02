@@ -79,8 +79,8 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
 
         IO = new IOSubsystem(hardwareMap);
         register(IO);
+        IO.resetEncoder();
         IO.startLimeLight();
-
         utils = new Utils(IO, follower);
 
         startPose = utils.mirror(startPose);
@@ -271,3 +271,7 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
     }
 
 }
+
+
+
+

@@ -55,8 +55,8 @@ public class Gains {
         public static double tT=0.095;
         public static double TUR_POS_EPS =30;
         public static double TUR_VEL_EPS =5000;
-        public static int MAX_TICKS =16000;
-        public static int MIN_TICKS =-17500;
+        public static int MAX_TICKS =15000;
+        public static int MIN_TICKS =-16000;  //-17500
 
         public static  double TURRET_TOLERANCE = 0.08;
 

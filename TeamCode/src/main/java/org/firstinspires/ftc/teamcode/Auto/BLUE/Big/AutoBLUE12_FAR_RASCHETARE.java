@@ -28,8 +28,8 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import java.util.List;
 
 @Configurable
-@Autonomous(name = "AutonomieBLUE_12_FAR_HUMAN", group = "Auto Blue")
-public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
+@Autonomous(name = "AutonomieBLUE_12_FAR_RASCHETARE", group = "Auto Blue")
+public class AutoBLUE12_FAR_RASCHETARE extends CommandOpMode {
     // Pedro visualizer poses
     private Pose startPose = new Pose(59.019, 6.857, Math.toRadians(180));
     private Pose preSpike2Pos = new Pose(11.374, 59.935, Math.toRadians(180));
@@ -39,7 +39,8 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
     private Pose preHumanPos = new Pose(9.701+3, 16.888+4, Math.toRadians(200));
     private Pose humanPos = new Pose(9.841+3, 9.009+1, Math.toRadians(200));
     private Pose parkPos = new Pose(36.05607476635514, 18.85981308411213, Math.toRadians(90));
-
+    private Pose hopePos1 = new Pose(9.079439252336439,8.345794392523363,Math.toRadians(180));
+    private Pose hopePos2 = new Pose(9.079439252336439,18.345794392523363,Math.toRadians(180));
     private PathChain startToPreSpike2Path;
     private PathChain preSpike2ToLeverPath;
     private PathChain leverToShootFarPath;
@@ -49,6 +50,10 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
     private PathChain preHumanToHumanPath;
     private PathChain humanToShootFarPath;
     private PathChain shootFarToParkPath;
+    private PathChain shootFarToHopePath;
+    private PathChain hopeToShootFarPath;
+    private PathChain hope2ToShootFarPath;
+    private PathChain shootFarToHope2Path;
 
     private List<LynxModule> hubs;
 
@@ -141,7 +146,7 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
                 .build();
 
         shootFarToPreHumanPath = follower.pathBuilder()
-                .addPath(new BezierLine(shootFarPos, preHumanPos))
+                .addPath(new BezierLine(startPose, preHumanPos))
                 .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(intakeAngle))
                 .setBrakingStrength(1)
                 .setBrakingStart(1)
@@ -156,17 +161,33 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
 
         humanToShootFarPath = follower.pathBuilder()
                 .addPath(new BezierLine(humanPos, shootFarPos))
-                .setLinearHeadingInterpolation(Math.toRadians(intakeAngle), Math.toRadians(180))
+                .setLinearHeadingInterpolation(Math.toRadians(intakeAngle), shootFarPos.getHeading())
                 .setBrakingStrength(1)
                 .setBrakingStart(1)
                 .build();
 
         shootFarToParkPath = follower.pathBuilder()
                 .addPath(new BezierLine(shootFarPos, parkPos))
-                .setLinearHeadingInterpolation(Math.toRadians(180), parkPos.getHeading())
+                .setLinearHeadingInterpolation(shootFarPos.getHeading(), parkPos.getHeading())
                 .build();
 
+        shootFarToHopePath = follower.pathBuilder()
+                        .addPath(new BezierLine(shootFarPos, hopePos1))
+                        .setConstantHeadingInterpolation(shootFarPos.getHeading())
+                        .build();
+        hopeToShootFarPath = follower.pathBuilder()
+                        .addPath(new BezierLine(hopePos1,shootFarPos))
+                        .setConstantHeadingInterpolation(shootFarPos.getHeading())
+                        .build();
 
+        shootFarToHope2Path = follower.pathBuilder()
+                .addPath(new BezierLine(shootFarPos, hopePos2))
+                .setConstantHeadingInterpolation(shootFarPos.getHeading())
+                .build();
+        hope2ToShootFarPath = follower.pathBuilder()
+                        .addPath(new BezierLine(hopePos2,shootFarPos))
+                        .setConstantHeadingInterpolation(shootFarPos.getHeading())
+                        .build();
 
 
 
@@ -189,34 +210,52 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
                                 new InstantCommand(() -> IO.setTargetTurretRads(Math.toRadians(90)))
                         ),
                         utils.newAutoOutake(5000),
-                        new FollowPathCommand(follower, startToPreSpike2Path)
-                                .beforeStarting(() -> follower.setMaxPower(0.55))
-                                .alongWith(utils.newStartIntake(4500))
-                                .andThen(utils.newStopIntake()),
-                        new FollowPathCommand(follower, preSpike2ToLeverPath)
-                                .beforeStarting(() -> follower.setMaxPower(1)),
-                        new WaitCommand(500),
-                        new FollowPathCommand(follower, leverToShootFarPath)
-                                .beforeStarting(() -> follower.setMaxPower(1)),
-                        utils.newAutoOutake(4500),
-                        new FollowPathCommand(follower, shootFarToSpike3Path)
-                                .alongWith(utils.newStartIntake(5000))
-                                .beforeStarting(() -> follower.setMaxPower(0.45))
-                                .andThen(utils.newStopIntake()),
-                        new FollowPathCommand(follower, spike3ToShootFarPath)
-                                .beforeStarting(() -> follower.setMaxPower(1)),
-                        utils.newAutoOutake(3000),
+
                         new FollowPathCommand(follower, shootFarToPreHumanPath)
                                 .beforeStarting(() -> follower.setMaxPower(0.7)),
-
                         new FollowPathCommand(follower, preHumanToHumanPath)
                                 .beforeStarting(() -> follower.setMaxPower(0.45 ))
                                 .alongWith(utils.newStartIntake(3000))
                                 .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, humanToShootFarPath)
                                 .beforeStarting(() -> follower.setMaxPower(0.9)),
-                        new WaitCommand(100),
+                        utils.newAutoOutake(4500),
+                        new WaitCommand(3000),
+                        new FollowPathCommand(follower, shootFarToPreHumanPath)
+                                .beforeStarting(() -> follower.setMaxPower(0.7)),
+                        new FollowPathCommand(follower, preHumanToHumanPath)
+                                .beforeStarting(() -> follower.setMaxPower(0.45 ))
+                                .alongWith(utils.newStartIntake(3000))
+                                .andThen(utils.newStopIntake()),
+                        new FollowPathCommand(follower, humanToShootFarPath)
+                                .beforeStarting(() -> follower.setMaxPower(0.9)),
+                        utils.newAutoOutake(4500),
+//                        new FollowPathCommand(follower, shootFarToPreHumanPath)
+//                                .beforeStarting(() -> follower.setMaxPower(0.7)),
+//                        new FollowPathCommand(follower, preHumanToHumanPath)
+//                                .beforeStarting(() -> follower.setMaxPower(0.45 ))
+//                                .alongWith(utils.newStartIntake(3000))
+//                                .andThen(utils.newStopIntake()),
+//                        new FollowPathCommand(follower, humanToShootFarPath)
+//                                .beforeStarting(() -> follower.setMaxPower(0.9)),
+//                        utils.newAutoOutake(4500),
+//
+//                        new FollowPathCommand(follower, shootFarToHopePath)
+//                                .beforeStarting(()->follower.setMaxPower(0.55))
+//                                .alongWith(utils.newStartIntake(3000))
+//                                .andThen(utils.newStopIntake()),
+//                        new FollowPathCommand(follower, hopeToShootFarPath)
+//                                .beforeStarting(()->follower.setMaxPower(0.9)),
+//                        utils.newAutoOutake(3000),
+//
+                        new FollowPathCommand(follower, shootFarToHope2Path)
+                                .beforeStarting(()->follower.setMaxPower(0.55))
+                                .alongWith(utils.newStartIntake(3000))
+                                .andThen(utils.newStopIntake()),
+                        new FollowPathCommand(follower, hope2ToShootFarPath)
+                                .beforeStarting(()->follower.setMaxPower(0.9)),
                         utils.newAutoOutake(3000),
+
                         new InstantCommand(()->IO.setTargetTurretRads(0)),
                         new FollowPathCommand(follower, shootFarToParkPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),

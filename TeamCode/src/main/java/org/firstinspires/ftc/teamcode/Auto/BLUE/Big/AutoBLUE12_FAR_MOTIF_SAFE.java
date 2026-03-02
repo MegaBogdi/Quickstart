@@ -77,8 +77,8 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
 
         IO = new IOSubsystem(hardwareMap);
         register(IO);
+        IO.resetEncoder();
         IO.startLimeLight();
-
         utils = new Utils(IO, follower);
 
         telemetryA = PanelsTelemetry.INSTANCE.getTelemetry();
@@ -241,3 +241,7 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
     }
 
 }
+
+
+
+

@@ -108,6 +108,14 @@ public class IOSubsystem extends SubsystemBase {
     private VoltageSensor myControlHubVoltageSensor;
 
 
+    public void resetEncoder() {
+        launcher1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+
+    public void resetEncoder2(){
+        sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+
 
     public IOSubsystem(final HardwareMap hMap) {
         snsr1 = hMap.get(NormalizedColorSensor.class, "senA");
@@ -133,7 +141,6 @@ public class IOSubsystem extends SubsystemBase {
 
         launcher1 = new CachingDcMotorEx((hMap.get(DcMotorEx.class, "lauA"))); // ENCODER RPM
         //launcher1.setDirection(DcMotorSimple.Direction.REVERSE);
-        launcher1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         launcher2 = new CachingDcMotorEx((hMap.get(DcMotorEx.class, "lauB"))); // ENCODER TURRET
         //launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -224,7 +231,8 @@ public class IOSubsystem extends SubsystemBase {
             {200,2530,0.2},
             {231, 2600, 0.2},
             {312,3000,0.23},
-            {343,3150,0.27}
+            {343,3150,0.27},
+            {388,3400,0.27}
     };
 
 
