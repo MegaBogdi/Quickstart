@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.Manual.Tests;
 
+import static org.firstinspires.ftc.teamcode.Auto.SharedUtils.targetPos;
+
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
@@ -22,11 +24,13 @@ public class TestTeleop extends CommandOpMode {
 
     private List<LynxModule> hubs;
     private GamepadEx driver1;
-    private CachingServo push1;
-    private CachingServo push2;
+    private CachingServo turret1;
+    private CachingServo turret2;
     private CachingServo hood; // max 0.375
+    private CachingServo coada; // max 0.375
 
-    private CachingCRServo turret;
+
+
 
     private CachingServo park1;
     private CachingServo park2;
@@ -50,10 +54,10 @@ public class TestTeleop extends CommandOpMode {
         driver1 = new GamepadEx(gamepad1);
 
 
-        push1 = new CachingServo(hardwareMap.get(Servo.class,"pushA"));
-        push2 = new CachingServo(hardwareMap.get(Servo.class,"pushB"));
+        turret1 = new CachingServo(hardwareMap.get(Servo.class,"turA"));
+        turret2 = new CachingServo(hardwareMap.get(Servo.class,"turB"));
         //push2.setDirection(Servo.Direction.REVERSE);
-        setPush(0.056);
+        //setTurret(0);
 
         hood = new CachingServo(hardwareMap.get(Servo.class,"hood"));
         //hood.setDirection(Servo.Direction.REVERSE);
@@ -64,28 +68,34 @@ public class TestTeleop extends CommandOpMode {
         park2 = new CachingServo(hardwareMap.get(Servo.class,"parkB"));
         //park2.setDirection(Servo.Direction.REVERSE);
 
-        turret = new CachingCRServo(hardwareMap.get(CRServo.class,"turet"));
+        coada = new CachingServo(hardwareMap.get(Servo.class,"coada"));
+
+        //turret = new CachingCRServo(hardwareMap.get(CRServo.class,"turet"));
 
         led = hardwareMap.get(Servo.class,"led");
 
-        driver1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
-                .whenPressed(()->hood.setPosition(0));
-        driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
-                .whenPressed(()->hood.setPosition(0.35));
-        driver1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
-                .whenPressed(()->setPush(push1.getPosition()-0.001));
-        driver1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
-                .whenPressed(()->setPush(push1.getPosition()+0.001));
+//        driver1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
+//                .whenPressed(()->hood.setPosition(0));
+//        driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
+//                .whenPressed(()->hood.setPosition(0.35));
 
-        double offset = 0.026;
+        driver1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
+                .whenPressed(()->setTurret(0));
+        driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
+                .whenPressed(()->setTurret(1));
+        driver1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
+                .whenPressed(()->setTurret(turret1.getPosition()-0.1));
+        driver1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
+                .whenPressed(()->setTurret(turret1.getPosition()+0.1));
+
         driver1.getGamepadButton(GamepadKeys.Button.A)
-                .whenPressed(()->setPark(0.5));
+                .whenPressed(()->coada.setPosition(0.2));
         driver1.getGamepadButton(GamepadKeys.Button.B)
-                .whenPressed(()->setPark(0.1));
+                .whenPressed(()->coada.setPosition(0.37));
         driver1.getGamepadButton(GamepadKeys.Button.X)
-                .whenPressed(()->setPark(1));
+                .whenPressed(()->coada.setPosition(coada.getPosition()+0.05));
         driver1.getGamepadButton(GamepadKeys.Button.Y)
-                .whenPressed(()->setPark(0));
+                .whenPressed(()->coada.setPosition(coada.getPosition()-0.05));
 
 
 
@@ -108,22 +118,24 @@ public class TestTeleop extends CommandOpMode {
 
 
 //
-//        telemetry.addData("TicksTarget",IO.getTurretTicks());
+        telemetry.addData("TargetPos",IO.sorter.getCurrentPosition());
 //        telemetry.addData("Ticks2Rads",IO.tick2rads(IO.getTurretTicks()));
 //        telemetry.addData("Rads2Ticks",IO.rads2ticks(IO.targetTurret));
 //        telemetry.addData("Transform",IO.rads2ticks(IO.tick2rads(IO.getTurretTicks())));
 //        telemetry.addData("Degrees",Math.toDegrees(IO.tick2rads(IO.getTurretTicks())));
-        telemetry.addData("hood",hood.getPosition());
-        telemetry.addData("push:",push1.getPosition());
+//        telemetry.addData("hood",hood.getPosition());
+//        telemetry.addData("tur:",turret1.getPosition());
+//        telemetry.addData("coada:",coada.getPosition());
+
 
         //IO.update_turret_pid();
         telemetry.update();
 
     }
 
-    public void setPush(double pos){
-        push1.setPosition(pos);
-        push2.setPosition(pos);
+    public void setTurret(double pos){
+        turret1.setPosition(pos);
+        turret2.setPosition(pos);
     }
     public void setPark(double pos){
         park1.setPosition(pos);

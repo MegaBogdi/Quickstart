@@ -1,10 +1,13 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
 import static com.arcrobotics.ftclib.util.MathUtils.clamp;
+import static org.firstinspires.ftc.teamcode.Auto.SharedUtils.targetPos;
 import static org.firstinspires.ftc.teamcode.Gains.RPMGains.*;
 import static org.firstinspires.ftc.teamcode.Gains.SorterGains.*;
 import static org.firstinspires.ftc.teamcode.Gains.TurretGains.*;
 
+
+import org.firstinspires.ftc.teamcode.Auto.SharedUtils;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.bylazar.configurables.annotations.Configurable;
@@ -13,19 +16,20 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-import dev.frozenmilk.dairy.cachinghardware.CachingCRServo;
 import dev.frozenmilk.dairy.cachinghardware.CachingDcMotorEx;
 import dev.frozenmilk.dairy.cachinghardware.CachingServo;
 
@@ -36,9 +40,8 @@ public class IOSubsystem extends SubsystemBase {
     private HardwareMap hmap;
     public CachingServo park1;
     public CachingServo park2;
-    private final CachingCRServo turret;
-    private final CachingServo push1;
-    private final CachingServo push2;
+    public CachingServo turret1;
+    private CachingServo turret2;
     private final CachingServo hood;
     public final Limelight3A lime;
 
@@ -47,6 +50,9 @@ public class IOSubsystem extends SubsystemBase {
     private final CachingDcMotorEx launcher1;
     private final CachingDcMotorEx launcher2;
     private final NormalizedColorSensor snsr1;
+    private final DistanceSensor prox;
+    private CachingServo coada; // max 0.375
+
     //private final CachingServo led;
 
 
@@ -56,24 +62,23 @@ public class IOSubsystem extends SubsystemBase {
     public static double redX=130.5;
     public static double redY=125;
     public static double testPower;
-    private int space = 2730;//2730;
-    private final double[] BLUE_GOAL = {5.5,134};
+    private int space = 2731;//2730;
+    private final double[] BLUE_GOAL = {15.5,134};  //5.5
     private final double[] RED_GOAL = {135.5,134};
 
     private final double tick_per_rotation = 8192;
 
     public static double RPM=0;
-    public static double targetRPM=0;
-    public static int targetPos;
-    public static int currentTurret;
-    public double targetTurret = Math.toRadians(0);
+    public double targetRPM=0;
+    public int currentTurret;
+    public double targetTurret = 0.5;
     // Mechanical zero offset between robot heading and turret encoder zero.
-    public static double turretHeadingOffsetRad = Math.PI;
-    private long lastUpdate = 1;
     public int[] ALL = new int[3];
     public int[] MOTIF = new int[3];
     public int demand_index;
+    public int pastPos;
     public boolean nowOpen = false;
+    public boolean nowCoada = false;
     public boolean nowParked = false;
     public boolean demanding = false; // temportal latch for demanding
     public boolean climbing = false; // temportal latch for climb
@@ -82,6 +87,8 @@ public class IOSubsystem extends SubsystemBase {
 
     public double PUSH_MIN_LIMIT = 0.053;
     public double PUSH_MAX_LIMIT = 0.1711;
+    public double COADA_MIN_LIMIT = 0.2;
+    public double COADA_MAX_LIMIT = 0.37;
 
     private double jamStart;
     public boolean jam;
@@ -120,6 +127,8 @@ public class IOSubsystem extends SubsystemBase {
     public IOSubsystem(final HardwareMap hMap) {
         snsr1 = hMap.get(NormalizedColorSensor.class, "senA");
         snsr1.setGain(8.0f);
+        prox = (DistanceSensor)snsr1;
+
 
         ALL[0] = 0;        MOTIF[0] = 1;
         ALL[1] = 0;        MOTIF[1] = 2;
@@ -135,9 +144,9 @@ public class IOSubsystem extends SubsystemBase {
         collector.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         sorter = new CachingDcMotorEx((hMap.get(DcMotorEx.class, "sort")));
-        sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         sorter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        sorter.setDirection(DcMotorSimple.Direction.REVERSE);
+        //sorter.setDirection(DcMotorSimple.Direction.REVERSE);
 
         launcher1 = new CachingDcMotorEx((hMap.get(DcMotorEx.class, "lauA"))); // ENCODER RPM
         //launcher1.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -152,15 +161,13 @@ public class IOSubsystem extends SubsystemBase {
         //led.setPosition(0);
         //==========================SERVO=========================================
 
-        push1 = new CachingServo(hMap.get(Servo.class,"pushA"));
-        push2 = new CachingServo(hMap.get(Servo.class,"pushB"));
-        push2.setDirection(Servo.Direction.REVERSE);
-        push1.setPosition(PUSH_MIN_LIMIT);
-        push2.setPosition(PUSH_MIN_LIMIT);
 
         hood =  new CachingServo(hMap.get(Servo.class,"hood"));
         hood.setDirection(Servo.Direction.REVERSE);
         hood.setPosition(SERVO_MIN_LIMIT);
+
+        coada = new CachingServo(hMap.get(Servo.class,"coada"));
+        coada.setPosition(COADA_MIN_LIMIT);
 
 
         park1 = new CachingServo(hMap.get(Servo.class,"parkA"));
@@ -169,8 +176,14 @@ public class IOSubsystem extends SubsystemBase {
         park2.setDirection(Servo.Direction.REVERSE);
         setPark(0);
 
+
+        turret1 = new CachingServo(hMap.get(Servo.class,"turA"));
+        turret2 = new CachingServo(hMap.get(Servo.class,"turB"));
+        turret1.setDirection(Servo.Direction.REVERSE);
+        turret2.setDirection(Servo.Direction.REVERSE);
+        setTurret(0.5);
+
         //=====================CRSERVO ======================================
-        turret = new CachingCRServo(hMap.get(CRServo.class, "turet"));
         //turret.setPower(0);
         //turret.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -180,14 +193,13 @@ public class IOSubsystem extends SubsystemBase {
         //lime.start();
 
 
-
         //follower = Constants.createFollower(hMap);
         //follower.setStartingPose(new Pose(89.49532710280373, 9.196261682242984, Math.toRadians(270)));
         //follower.startTeleopDrive();
         //follower.update();
 
         pid = new PIDController(sP, sI, sD);
-        targetPos = 0;
+        targetPos = sorter.getCurrentPosition() + closestToInitPos();
 
         pidT = new PIDController(tP,tI,tD);
         targetRPM=0;
@@ -213,6 +225,24 @@ public class IOSubsystem extends SubsystemBase {
         //led.setPosition(color);
     }
 
+    int CLOSEST_POS = 2731;
+
+    public int closestToInitPos()
+    {
+        int normalized = sorter.getCurrentPosition() % CLOSEST_POS, p1 = normalized, p2 = CLOSEST_POS-normalized;
+        normalized = Math.min(p1,p2);
+        if (normalized == p1) return -normalized;
+        else return normalized;
+    }
+    public int closestToIntakePos()
+    {
+        int normalized = sorter.getCurrentPosition() % CLOSEST_POS/2, p1 = normalized, p2 = CLOSEST_POS/2-normalized;
+        normalized = Math.min(p1,p2);
+        if (normalized == p1) return -normalized;
+        else return normalized;
+    }
+
+
 /*
     double[][] shootingData = {
             { 100, 2300, 0.8 },
@@ -231,8 +261,8 @@ public class IOSubsystem extends SubsystemBase {
             {200,2530,0.2},
             {231, 2600, 0.2},
             {312,3000,0.23},
-            {343,3150,0.27},
-            {388,3400,0.27}
+            {343,3150,0.27},   //3150   0.27
+            {388,3400,0.27}    //3400   0.27
     };
 
 
@@ -269,17 +299,23 @@ public class IOSubsystem extends SubsystemBase {
         return new double[]{0, 0};
     }
 
-    public int getTurretTicks(){
-        return launcher1.getCurrentPosition();
-    }
-    public double getTurretVelocity(){
-        return launcher1.getVelocity();
+    public double getTurretTarget(){
+        return targetTurret;
     }
 
     public void setPark(double pos){
         park1.setPosition(pos);
         park2.setPosition(pos);
     }
+    public void setCoada(double pos){
+        coada.setPosition(pos);
+        if (pos==COADA_MAX_LIMIT){
+            nowCoada= true;
+        } else if (pos == COADA_MIN_LIMIT){
+            nowCoada= false;
+        }
+    }
+
 
     public void togglePark(){
         if (nowParked){
@@ -353,15 +389,10 @@ public class IOSubsystem extends SubsystemBase {
     public void setMotorRPM(double rpm){
         targetRPM = rpm;
     }
-    public double returnRPM(){
-        return RPM;
+    public double getRPM(){
+        return launcher2.getVelocity();
     }
-    public double returnTargetRPM(){
-        return targetRPM;
-    }
-    public double returnTargetPos(){
-        return targetPos;
-    }
+
     public double returnSorterPos(){
         return sorter.getCurrentPosition();
     }
@@ -378,8 +409,10 @@ public class IOSubsystem extends SubsystemBase {
         hood.setPosition((rawAngle - SERVO_MIN_LIMIT) / (SERVO_MAX_LIMIT - SERVO_MIN_LIMIT));
     }
 
-    public void setTargetTurretRads(double newTargetPos){
-        targetTurret = newTargetPos;
+    double conversion = 0.5 / Math.toRadians(112);
+
+    public void setTargetTurretRads(double rads){
+        targetTurret = (rads+Math.toRadians(112))*conversion;
     }
 
 
@@ -393,12 +426,14 @@ public class IOSubsystem extends SubsystemBase {
     public double turretCommandFromGoalAngle(double goalAngle, Pose pose) {
         return AngleUnit.normalizeRadians(goalAngle - (pose.getHeading() - Math.toRadians(180)));
     }
-
+    public void setTurret(double pos){
+        turret1.setPosition(pos);
+        turret2.setPosition(pos);
+    }
 
     public void setHood(double ang)
     {
-        hood.setPosition(ang);
-
+        hood.setPosition(Math.min(SERVO_MAX_LIMIT,Math.max(ang,SERVO_MIN_LIMIT)));
     }
 
 // Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret Angle Turret
@@ -415,14 +450,14 @@ public class IOSubsystem extends SubsystemBase {
     }
 
     public boolean isTurretReady(double alpha,Follower recivedFollower){
-        double turretFieldHeading =  AngleUnit.normalizeRadians(-recivedFollower.getPose().getHeading() + tick2rads(getTurretTicks()) + Math.toRadians(180));
+        double turretFieldHeading =  AngleUnit.normalizeRadians(-recivedFollower.getPose().getHeading() + getTurretTarget() + Math.toRadians(180));
         return Math.abs(-turretFieldHeading - alpha) < TURRET_TOLERANCE;
     }
 
 
 
     public double testTurretReady(double alpha,Follower recivedFollower) {
-        double turretFieldHeading =  AngleUnit.normalizeRadians(-recivedFollower.getPose().getHeading() + tick2rads(getTurretTicks()) + Math.toRadians(180));
+        double turretFieldHeading =  AngleUnit.normalizeRadians(-recivedFollower.getPose().getHeading() + getTurretTarget() + Math.toRadians(180));
         return Math.abs(-turretFieldHeading - alpha);
     }
     double ratio = 207.0/44.0;
@@ -470,6 +505,9 @@ public class IOSubsystem extends SubsystemBase {
         return new float[] {r,g,b};
 
     }
+    public double getProxim(){
+        return prox.getDistance(DistanceUnit.CM);
+    }
 
     public boolean isOcupied(){
         if (detectDominant(snsr1.getNormalizedColors())==0){
@@ -477,6 +515,12 @@ public class IOSubsystem extends SubsystemBase {
         else{
             return true;}
     }
+
+    public boolean isOcupied_(){
+        if (getProxim()<6.5){return true;}
+        else{return false;}
+    }
+
     public int readSensor() {
         int rez = detectDominant(snsr1.getNormalizedColors());
         return rez;
@@ -484,6 +528,15 @@ public class IOSubsystem extends SubsystemBase {
     public void climb(){
         shiftSorterTarget(space);
         cycle_up();
+    }
+    public void full_spin(){
+        shiftSorterTarget((int)tick_per_rotation);
+    }
+    public void two_spin(){
+        shiftSorterTarget((int)tick_per_rotation*2);
+    }
+    public void full_climb(){
+        shiftSorterTarget((int)tick_per_rotation+space);
     }
     public void climbDown(){
         shiftSorterTarget(-space);
@@ -505,11 +558,8 @@ public class IOSubsystem extends SubsystemBase {
     }
 
     public void setPush(double pos){
-        push1.setPosition(pos);
-        push2.setPosition(pos);
+
     }
-    public double getPush(){
-        return push1.getPosition();}
 
     public int getTicksSort(){
         return sorter.getCurrentPosition();
@@ -560,6 +610,11 @@ public class IOSubsystem extends SubsystemBase {
             return true;
         } else {return false;}
 
+    }
+    public boolean isOneRevPast(){
+        if  (Math.abs(pastPos-sorter.getCurrentPosition())>=space+space/4){
+            return true;
+        } else {return false;}
     }
     public void rectify(){
         shiftSorterTarget(space/2);
@@ -647,7 +702,7 @@ public class IOSubsystem extends SubsystemBase {
         jam = jamDetect(t,finalError,currentVel,output);
 
 
-        sorter.setPower(output);
+        sorter.setPower(-output);
     }
 
     private void shiftSorterTarget(int deltaTicks) {
@@ -736,28 +791,9 @@ public class IOSubsystem extends SubsystemBase {
 
 
     public void update_turret_pid(){
-        currentTurret =  getTurretTicks();
-        double targetTurretTicks = Math.max(MIN_TICKS,Math.min(rads2ticks(-targetTurret), MAX_TICKS)); // clamp before it gets out of range
-        double currentTurretVel = getTurretVelocity();
-        double error = targetTurretTicks-currentTurret;
-
-        double output = pidT.calculate(currentTurret,targetTurretTicks);
-
-        if (Math.abs(error) < TUR_POS_EPS){
-            output=0;
-        }
-
-        if (currentTurret > MAX_TICKS){if(output>0){output=0;}} //targetTurret= tick2rads(MIN_TICKS);} //CLAMP POWER IF IT GETS OUT OF BOUNDS but let it only exit
-        if (currentTurret < MIN_TICKS){if(output<0){output=0;}} //targetTurret = tick2rads(MAX_TICKS);}
-
-        output = Math.max(-1,Math.min(output,1)); //CLAMP POWER
-
-
-        turret.setPower(output);
+        setTurret(targetTurret);
     }
-    public void testTS(){
-        turret.setPower(tS);
-    }
+
 
 
     public void update_RPM_pid(){

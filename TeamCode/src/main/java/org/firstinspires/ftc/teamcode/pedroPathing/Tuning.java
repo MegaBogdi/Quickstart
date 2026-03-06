@@ -24,9 +24,13 @@ import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.*;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import dev.frozenmilk.dairy.cachinghardware.CachingDcMotorEx;
+import dev.frozenmilk.dairy.cachinghardware.CachingServo;
 
 /**
  * This is the Tuning class. It contains a selection menu for various tuning OpModes.
@@ -128,9 +132,13 @@ public class Tuning extends SelectableOpMode {
  * @version 1.0, 5/6/2024
  */
 class LocalizationTest extends OpMode {
+    public CachingDcMotorEx sorter;
+    public CachingDcMotorEx coll;
     @Override
     public void init() {
         follower.setStartingPose(new Pose(72,72));
+        coll = new CachingDcMotorEx((hardwareMap.get(DcMotorEx.class, "lauA")));
+        sorter = new CachingDcMotorEx((hardwareMap.get(DcMotorEx.class, "lauB")));
     }
 
     /** This initializes the PoseUpdater, the mecanum drive motors, and the Panels telemetry. */
@@ -163,6 +171,8 @@ class LocalizationTest extends OpMode {
         telemetryM.debug("heading:" + follower.getPose().getHeading());
         telemetryM.debug("total heading:" + follower.getTotalHeading());
         telemetryM.update(telemetry);
+        sorter.setPower(1);
+        coll.setPower(1);
 
         draw();
     }

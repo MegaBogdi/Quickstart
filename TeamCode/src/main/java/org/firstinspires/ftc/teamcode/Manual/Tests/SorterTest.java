@@ -5,6 +5,7 @@ import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -16,7 +17,7 @@ import org.firstinspires.ftc.teamcode.TrapezoidProfile;
 import java.util.List;
 
 import dev.frozenmilk.dairy.cachinghardware.CachingDcMotorEx;
-
+@Disabled
 @Configurable
 @TeleOp(name = "SorterTest",group="Tests")
 public class SorterTest extends CommandOpMode {

@@ -1,6 +1,8 @@
 // MT1 version (hard snap + orientation/offset + telemetry state)
 package org.firstinspires.ftc.teamcode.Manual;
 
+import static org.firstinspires.ftc.teamcode.Gains.POS_EPS;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.ftc.InvertedFTCCoordinates;
@@ -17,10 +19,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 public final class LimePoseSync {
     private LimePoseSync() {}
 
+    public static int counter=0;
     public static boolean USE_INVERTED_FTC_COORDS = false;
     public static double X_OFFSET_IN = 0.0;
     public static double Y_OFFSET_IN = 0.0;
-    public static double HEADING_OFFSET_DEG = -180.00;
+    public static double HEADING_OFFSET_DEG = -210.00;
     public static double MAX_STALENESS_MS = 120.0;
     public static int MIN_TAGS = 1;
 
@@ -79,6 +82,7 @@ public final class LimePoseSync {
         lastPedroX = snapped.getX();
         lastPedroY = snapped.getY();
         lastPedroHeadingDeg = Math.toDegrees(snapped.getHeading());
+        if (Math.abs(lastPedroX-follower.getPose().getX())>POS_EPS||Math.abs(lastPedroX-follower.getPose().getY())>POS_EPS){counter++; if (counter<30){;return;}} else {counter=0;}
 
         follower.setPose(snapped); // hard snap
         lastApplied = true;

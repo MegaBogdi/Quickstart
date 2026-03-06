@@ -5,6 +5,10 @@ import com.bylazar.configurables.annotations.Configurable;
 
 
 public class Gains {
+
+    public static double POS_EPS=30;
+
+
     @Configurable
     public static class ProfileGains {
         public static double kP = 0;
@@ -67,6 +71,7 @@ public class Gains {
         public static double kI =0.0;
         public static double kD =0.0;  // try to keep 0
         public static double kS = 0.151;   //Static power;
+        public static double kL=0.00004;
         public static  double kV=0.000185;  // pure feedForward
         public static double RPM_EPS = 30; // RPM TOLERANCE
     }

@@ -150,8 +150,6 @@ public class AutoRED0_FAR_init extends CommandOpMode {
         telemetryA.debug(String.format("coord: x=%.2f  y=%.2f  h=%.1f", p.getX(), p.getY(), Math.toDegrees(p.getHeading())));
         telemetryA.debug(String.format("ALL: 0=%d | 1=%d | 2=%d", IO.ALL[0], IO.ALL[1], IO.ALL[2]));
         telemetryA.debug(String.format("condition: RPM:%b | turret:%b | sorter:%b", IO.isRPMready(), IO.isTurretReady(alpha, follower), IO.isSorterReady()));
-        telemetryA.debug("rpm: " + IO.returnRPM());
-        telemetryA.debug("targetRpm: " + IO.returnTargetRPM());
         telemetryA.update(telemetry);
 
         IO.update_sep_pid(timer.seconds());

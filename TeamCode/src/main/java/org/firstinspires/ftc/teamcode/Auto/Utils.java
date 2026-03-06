@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.Auto;
 
+import static org.firstinspires.ftc.teamcode.Gains.RPMGains.kL;
+
 import com.arcrobotics.ftclib.command.Command;
 import com.arcrobotics.ftclib.command.ConditionalCommand;
 import com.arcrobotics.ftclib.command.InstantCommand;
@@ -14,11 +16,13 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.Manual.LimePoseSync;
 import org.firstinspires.ftc.teamcode.Subsystems.IOSubsystem;
 
 public class Utils {
     Follower follower;
     IOSubsystem IO;
+    double[] interpValues;
     public Utils(IOSubsystem IO, Follower follower){
         this.IO = IO;
         this.follower = follower;
@@ -27,7 +31,7 @@ public class Utils {
     double alpha;
     int id;
 
-    public Command newAutoOutake(int timeout){
+    public Command newAutoOutake_(int timeout){
         Command quickPush = new SequentialCommandGroup(
                 new InstantCommand(() -> IO.setPush(IO.PUSH_MAX_LIMIT)),
                 new WaitCommand(35),
@@ -82,7 +86,47 @@ public class Utils {
         );
 
     }
+    public Command newAutoOutake(int timeout){
 
+        return new SequentialCommandGroup(
+                new ParallelDeadlineGroup(new WaitUntilCommand(()->IO.isRPMready()),new RunCommand(()->interp()),new RunCommand(()->autoAim())),
+                new InstantCommand(()->{IO.two_spin();IO.pastPos=IO.sorter.getCurrentPosition();}),
+                new WaitUntilCommand(()->IO.isOneRevPast()),
+                new InstantCommand(()->IO.setCoada(IO.COADA_MAX_LIMIT)),
+                new ParallelDeadlineGroup(
+                        new WaitUntilCommand(()->IO.isSorterReady()),
+                        new RunCommand(()-> ladderInterp()),
+                        new RunCommand(()->autoAim())
+                ).withTimeout(timeout),
+                new InstantCommand(()->{IO.setCoada(IO.COADA_MIN_LIMIT);LimePoseSync.sync(follower, IO.lime, IO.getTurretTarget());}),
+                new InstantCommand(()->{IO.ALL[0]=0;IO.ALL[1]=0;IO.ALL[2]=0;}),
+                new InstantCommand(()->stopAutoOutake())
+        );
+
+    }
+
+    public void interp(){
+
+        interpValues = IO.getInterpolatedValues(IO.getDistanceOdom(follower.getPose()));
+        IO.setHood(interpValues[1]);
+        IO.setMotorRPM(interpValues[0]);
+    }
+    public void ladderInterp(){
+        double error = IO.targetRPM - IO.getRPM();
+        interpValues = IO.getInterpolatedValues(IO.getDistanceOdom(follower.getPose()));
+        IO.setMotorRPM(interpValues[0]);
+        IO.setHood(interpValues[1]-error*kL);
+    }
+    public void autoAim(){
+        alpha = IO.getAngle(follower.getPose());
+        IO.setTargetTurretRads(IO.turretCommandFromGoalAngle(alpha, follower.getPose()));
+    }
+    public void stopAutoOutake(){
+        IO.setMotorRPM(2300);
+        IO.setHood(IO.SERVO_MIN_LIMIT);
+        IO.setTargetTurretRads(IO.teamIsRed? Math.toRadians(-90):Math.toRadians(90));
+        IO.setCoada(IO.COADA_MIN_LIMIT);
+    }
 
     public Command newStartIntake(int timeout){
         Command stopIntake = new InstantCommand(() -> {
@@ -179,6 +223,7 @@ public class Utils {
                 AngleUnit.normalizeRadians(Math.PI - pose.getHeading())
         );
     }
+
 
 
 
