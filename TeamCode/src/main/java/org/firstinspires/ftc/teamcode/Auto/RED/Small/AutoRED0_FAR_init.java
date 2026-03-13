@@ -105,7 +105,7 @@ public class AutoRED0_FAR_init extends CommandOpMode {
                 new RunCommand(() -> {
                     if (IO.jam && !IO.recovering) {
                         IO.recovering = true;
-                        schedule(utils.createRecoverySeq());
+                        schedule(IO.createRecoverySeq());
                     }
                 }),
                 new SequentialCommandGroup(
@@ -117,10 +117,10 @@ public class AutoRED0_FAR_init extends CommandOpMode {
                         }),
                         new ParallelCommandGroup(
                                 utils.newMotify(1000),
-                                new InstantCommand(() -> IO.setTargetTurretRads(Math.toRadians(-90)))
+                                new InstantCommand(() -> IO.setTurretPosRads(Math.toRadians(-90)))
                         ),
-                        utils.newAutoOutake(5000),
-                        new InstantCommand(()->IO.setTargetTurretRads(0)),
+                        utils.newAutoOutake(5000,1),
+                        new InstantCommand(()->IO.setTurretPosRads(0)),
                         new FollowPathCommand(follower, startToSpacePath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new WaitCommand(250),

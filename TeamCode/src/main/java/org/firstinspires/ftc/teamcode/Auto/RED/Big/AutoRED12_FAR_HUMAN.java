@@ -30,22 +30,23 @@ import java.util.List;
 @Configurable
 @Autonomous(name = "AutonomieRED_12_FAR_HUMAN", group = "Auto Red")
 public class AutoRED12_FAR_HUMAN extends CommandOpMode {
-    // Pedro visualizer poses
+    // Base (BLUE) poses; mirrored in initialize() for RED.
     private Pose startPose = new Pose(59.019, 6.857, Math.toRadians(180));
-    private Pose preSpike2Pos = new Pose(11.374, 59.935, Math.toRadians(180));
-    private Pose spike2LeverPos = new Pose(19.195, 65.495, Math.toRadians(180));
+    private Pose preSpike2Pos = new Pose(50.242, 59.485 - 1, Math.toRadians(180));
+    private Pose spike2Pos = new Pose(11.374 + 2.7, 59.935 - 1, Math.toRadians(180));
+    private Pose leverPos = new Pose(19.195, 65.495, Math.toRadians(180));
     private Pose shootFarPos = new Pose(59.701, 19.570, Math.toRadians(180));
-    private Pose spike3Pos = new Pose(10.477, 35.804, Math.toRadians(180));
-    private Pose preHumanPos = new Pose(9.701+3, 16.888+4, Math.toRadians(200));
-    private Pose humanPos = new Pose(9.841+3, 9.009+1, Math.toRadians(200));
+    private Pose spike3Pos = new Pose(10.477 + 2, 35.804, Math.toRadians(180));
+    private Pose preHumanPos = new Pose(9.701 + 2-1, 16.888 + 4 + 2, Math.toRadians(200));
+    private Pose humanPos = new Pose(9.841 + 2-1, 9.009 + 1.5, Math.toRadians(200));
     private Pose parkPos = new Pose(36.05607476635514, 18.85981308411213, Math.toRadians(90));
-    private Pose startToPreSpike2ControlPos = new Pose(68.561, 72.835, Math.toRadians(180));
-    private Pose preSpike2ToLeverControlPos = new Pose(27.140, 59.785, Math.toRadians(180));
+    private Pose spike2ToLeverControlPos = new Pose(27.140, 59.785, Math.toRadians(180));
     private Pose leverToShootFarControlPos = new Pose(47.126, 51.089, Math.toRadians(180));
     private Pose shootFarToSpike3ControlPos = new Pose(52.136, 42.360, Math.toRadians(180));
 
     private PathChain startToPreSpike2Path;
-    private PathChain preSpike2ToLeverPath;
+    private PathChain preSpike2ToSpike2Path;
+    private PathChain spike2ToLeverPath;
     private PathChain leverToShootFarPath;
     private PathChain shootFarToSpike3Path;
     private PathChain spike3ToShootFarPath;
@@ -63,8 +64,7 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
     private Utils utils;
     private double alpha;
     private boolean succesDemand;
-    private int id;
-    private double intakeAngle = 207;
+    private double intakeAngle = 255;
 
     private ElapsedTime timer;
 
@@ -79,20 +79,19 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
 
         IO = new IOSubsystem(hardwareMap);
         register(IO);
-        IO.resetEncoder();
         IO.startLimeLight();
         utils = new Utils(IO, follower);
 
         startPose = utils.mirror(startPose);
         preSpike2Pos = utils.mirror(preSpike2Pos);
-        spike2LeverPos = utils.mirror(spike2LeverPos);
+        spike2Pos = utils.mirror(spike2Pos);
+        leverPos = utils.mirror(leverPos);
         shootFarPos = utils.mirror(shootFarPos);
         spike3Pos = utils.mirror(spike3Pos);
         preHumanPos = utils.mirror(preHumanPos);
         humanPos = utils.mirror(humanPos);
         parkPos = utils.mirror(parkPos);
-        startToPreSpike2ControlPos = utils.mirror(startToPreSpike2ControlPos);
-        preSpike2ToLeverControlPos = utils.mirror(preSpike2ToLeverControlPos);
+        spike2ToLeverControlPos = utils.mirror(spike2ToLeverControlPos);
         leverToShootFarControlPos = utils.mirror(leverToShootFarControlPos);
         shootFarToSpike3ControlPos = utils.mirror(shootFarToSpike3ControlPos);
         intakeAngle = 180 - intakeAngle;
@@ -110,35 +109,43 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
         timer.startTime();
 
         startToPreSpike2Path = follower.pathBuilder()
-                .addPath(new BezierCurve(
+                .addPath(new BezierLine(
                         startPose,
-                        startToPreSpike2ControlPos,
                         preSpike2Pos))
+                .setConstantHeadingInterpolation(startPose.getHeading())
+                .setBrakingStrength(1)
+                .setBrakingStart(1)
+                .build();
+
+        preSpike2ToSpike2Path = follower.pathBuilder()
+                .addPath(new BezierLine(
+                        preSpike2Pos,
+                        spike2Pos))
                 .setConstantHeadingInterpolation(preSpike2Pos.getHeading())
                 .setBrakingStrength(1)
                 .setBrakingStart(1)
                 .build();
 
-        preSpike2ToLeverPath = follower.pathBuilder()
+        spike2ToLeverPath = follower.pathBuilder()
                 .addPath(new BezierCurve(
-                        preSpike2Pos,
-                        preSpike2ToLeverControlPos,
-                        spike2LeverPos
+                        spike2Pos,
+                        spike2ToLeverControlPos,
+                        leverPos
                 ))
                 .setBrakingStrength(1)
                 .setBrakingStart(1)
-                .setConstantHeadingInterpolation(spike2LeverPos.getHeading())
+                .setConstantHeadingInterpolation(spike2Pos.getHeading())
                 .build();
 
         leverToShootFarPath = follower.pathBuilder()
                 .addPath(new BezierCurve(
-                        spike2LeverPos,
+                        leverPos,
                         leverToShootFarControlPos,
                         shootFarPos
                 ))
-                .setBrakingStrength(0.7)
-                .setBrakingStart(0.75)
-                .setConstantHeadingInterpolation(shootFarPos.getHeading())
+                .setBrakingStrength(1)
+                .setBrakingStart(1)
+                .setConstantHeadingInterpolation(leverPos.getHeading())
                 .build();
 
         shootFarToSpike3Path = follower.pathBuilder()
@@ -147,14 +154,14 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
                         shootFarToSpike3ControlPos,
                         spike3Pos
                 ))
-                .setConstantHeadingInterpolation(spike3Pos.getHeading())
+                .setConstantHeadingInterpolation(shootFarPos.getHeading())
                 .setBrakingStrength(1)
                 .setBrakingStart(1)
                 .build();
 
         spike3ToShootFarPath = follower.pathBuilder()
                 .addPath(new BezierLine(spike3Pos, shootFarPos))
-                .setConstantHeadingInterpolation(shootFarPos.getHeading())
+                .setConstantHeadingInterpolation(spike3Pos.getHeading())
                 .setBrakingStrength(1)
                 .setBrakingStart(1)
                 .build();
@@ -185,15 +192,11 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
                 .setLinearHeadingInterpolation(shootFarPos.getHeading(), parkPos.getHeading())
                 .build();
 
-
-
-
-
         schedule(
                 new RunCommand(() -> {
                     if (IO.jam && !IO.recovering) {
                         IO.recovering = true;
-                        schedule(utils.createRecoverySeq());
+                        schedule(IO.createRecoverySeq());
                     }
                 }),
                 new SequentialCommandGroup(
@@ -202,44 +205,54 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
                             IO.ALL[0] = 1;
                             IO.ALL[1] = 2;
                             IO.ALL[2] = 1;
+                            //IO.offsetGoal(true, 10, -5);
                         }),
                         new ParallelCommandGroup(
                                 utils.newMotify(1000),
-                                new InstantCommand(() -> IO.setTargetTurretRads(Math.toRadians(-90)))
+                                new InstantCommand(() -> IO.setTurretPosRads(Math.toRadians(-90)))
                         ),
-                        utils.newAutoOutake(5000),
+                        utils.newAutoOutake(5000, 2),
                         new FollowPathCommand(follower, startToPreSpike2Path)
-                                .beforeStarting(() -> follower.setMaxPower(0.55))
-                                .alongWith(utils.newStartIntake(4500))
-                                .andThen(utils.newStopIntake()),
-                        new FollowPathCommand(follower, preSpike2ToLeverPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        new WaitCommand(500),
+                        new FollowPathCommand(follower, preSpike2ToSpike2Path)
+                                .beforeStarting(() -> follower.setMaxPower(0.41))
+                                .alongWith(utils.newStartIntake(3000))
+                                .andThen(utils.newStopIntake()),
+                        new FollowPathCommand(follower, spike2ToLeverPath)
+                                .beforeStarting(() -> follower.setMaxPower(0.9)),
+                        new WaitCommand(800),
                         new FollowPathCommand(follower, leverToShootFarPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        utils.newAutoOutake(4500),
+                        new WaitCommand(400),
+                        utils.newAutoOutake(4500, 2),
+
                         new FollowPathCommand(follower, shootFarToSpike3Path)
+                                .beforeStarting(() -> follower.setMaxPower(0.41))
                                 .alongWith(utils.newStartIntake(5000))
-                                .beforeStarting(() -> follower.setMaxPower(0.45))
                                 .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, spike3ToShootFarPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        utils.newAutoOutake(3000),
-                        new FollowPathCommand(follower, shootFarToPreHumanPath)
-                                .beforeStarting(() -> follower.setMaxPower(0.7)),
+                        new WaitCommand(300),
+                        utils.newAutoOutake(3000, 3),
 
-                        new FollowPathCommand(follower, preHumanToHumanPath)
-                                .beforeStarting(() -> follower.setMaxPower(0.45 ))
-                                .alongWith(utils.newStartIntake(3000))
+                        new FollowPathCommand(follower, shootFarToPreHumanPath).withTimeout(2000)
+                                .beforeStarting(() -> follower.setMaxPower(0.7)),
+                        new FollowPathCommand(follower, preHumanToHumanPath).withTimeout(4000)
+                                .beforeStarting(() -> follower.setMaxPower(0.41))
+                                .alongWith(utils.newStartIntake(4000))
                                 .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, humanToShootFarPath)
                                 .beforeStarting(() -> follower.setMaxPower(0.9)),
-                        new WaitCommand(100),
-                        utils.newAutoOutake(3000),
-                        new InstantCommand(()->IO.setTargetTurretRads(0)),
+                        new WaitCommand(300),
+                        utils.newAutoOutake(3000, 2),
+
+                        new InstantCommand(() -> IO.setTurretPosRads(0)),
                         new FollowPathCommand(follower, shootFarToParkPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        new InstantCommand(() -> {SharedUtils.sharedPose = follower.getPose();})
+                        new InstantCommand(() -> {
+                            SharedUtils.sharedPose = follower.getPose();
+                            //IO.offsetGoal(true, 10,-5);
+                        })
                 )
         );
     }
@@ -269,9 +282,4 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
         IO.update_RPM_pid();
         IO.update_turret_pid();
     }
-
 }
-
-
-
-

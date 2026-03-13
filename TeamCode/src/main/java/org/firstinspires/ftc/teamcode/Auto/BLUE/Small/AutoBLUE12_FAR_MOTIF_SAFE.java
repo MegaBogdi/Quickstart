@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Auto.BLUE.Big;
+package org.firstinspires.ftc.teamcode.Auto.BLUE.Small;
 
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
@@ -164,7 +164,7 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
                 new RunCommand(() -> {
                     if (IO.jam && !IO.recovering) {
                         IO.recovering = true;
-                        schedule(utils.createRecoverySeq());
+                        schedule(IO.createRecoverySeq());
                     }
                 }),
                 new SequentialCommandGroup(
@@ -176,9 +176,9 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
                         }),
                         new ParallelCommandGroup(
                                 utils.newMotify(1000),
-                                new InstantCommand(() -> IO.setTargetTurretRads(Math.toRadians(90)))
+                                new InstantCommand(() -> IO.setTurretPosRads(Math.toRadians(90)))
                         ),
-                        utils.newAutoOutake(5000),
+                        utils.newAutoOutake(5000,1),
                         new FollowPathCommand(follower, startToSpike2Path)
                                 .beforeStarting(() -> follower.setMaxPower(0.55))
                                 .alongWith(utils.newStartIntake(4500))
@@ -188,14 +188,14 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
                         new WaitCommand(500),
                         new FollowPathCommand(follower, leverToShootFarPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        utils.newAutoOutake(4500),
+                        utils.newAutoOutake(4500,2),
                         new FollowPathCommand(follower, shootFarToSpike3Path)
                                 .alongWith(utils.newStartIntake(5000))
                                 .beforeStarting(() -> follower.setMaxPower(0.45))
                                 .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, spike3ToShootShortPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        utils.newAutoOutake(3000),
+                        utils.newAutoOutake(3000,3),
                         new FollowPathCommand(follower, shootShortToSpike1Path)
                                 .beforeStarting(() -> follower.setMaxPower(0.5))
                                 .alongWith(utils.newStartIntake(4500))
@@ -203,8 +203,8 @@ public class AutoBLUE12_FAR_MOTIF_SAFE extends CommandOpMode {
                         new FollowPathCommand(follower, spike1ToShootShortPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new WaitCommand(100),
-                        utils.newAutoOutake(3000),
-                        new InstantCommand(()->IO.setTargetTurretRads(0)),
+                        utils.newAutoOutake(3000,1),
+                        new InstantCommand(()->IO.setTurretPosRads(0)),
                         new FollowPathCommand(follower, shootShortToParkPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new InstantCommand(() -> {SharedUtils.sharedPose = follower.getPose();})

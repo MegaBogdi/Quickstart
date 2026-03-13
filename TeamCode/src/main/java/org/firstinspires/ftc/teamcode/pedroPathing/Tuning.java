@@ -171,8 +171,6 @@ class LocalizationTest extends OpMode {
         telemetryM.debug("heading:" + follower.getPose().getHeading());
         telemetryM.debug("total heading:" + follower.getTotalHeading());
         telemetryM.update(telemetry);
-        sorter.setPower(1);
-        coll.setPower(1);
 
         draw();
     }

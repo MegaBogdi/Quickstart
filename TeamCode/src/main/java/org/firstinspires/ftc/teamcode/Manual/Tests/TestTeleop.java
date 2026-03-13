@@ -24,8 +24,8 @@ public class TestTeleop extends CommandOpMode {
 
     private List<LynxModule> hubs;
     private GamepadEx driver1;
-    private CachingServo turret1;
-    private CachingServo turret2;
+    private CachingCRServo turret1;
+    private CachingCRServo turret2;
     private CachingServo hood; // max 0.375
     private CachingServo coada; // max 0.375
 
@@ -54,8 +54,8 @@ public class TestTeleop extends CommandOpMode {
         driver1 = new GamepadEx(gamepad1);
 
 
-        turret1 = new CachingServo(hardwareMap.get(Servo.class,"turA"));
-        turret2 = new CachingServo(hardwareMap.get(Servo.class,"turB"));
+        turret1 = new CachingCRServo(hardwareMap.get(CRServo.class,"turA"));
+        turret2 = new CachingCRServo(hardwareMap.get(CRServo.class,"turB"));
         //push2.setDirection(Servo.Direction.REVERSE);
         //setTurret(0);
 
@@ -63,10 +63,6 @@ public class TestTeleop extends CommandOpMode {
         //hood.setDirection(Servo.Direction.REVERSE);
         //hood.setPosition(0);
 
-        park1 = new CachingServo(hardwareMap.get(Servo.class,"parkA"));
-        //park1.setDirection(Servo.Direction.REVERSE);
-        park2 = new CachingServo(hardwareMap.get(Servo.class,"parkB"));
-        //park2.setDirection(Servo.Direction.REVERSE);
 
         coada = new CachingServo(hardwareMap.get(Servo.class,"coada"));
 
@@ -78,20 +74,18 @@ public class TestTeleop extends CommandOpMode {
 //                .whenPressed(()->hood.setPosition(0));
 //        driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
 //                .whenPressed(()->hood.setPosition(0.35));
-
-        driver1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
-                .whenPressed(()->setTurret(0));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
-                .whenPressed(()->setTurret(1));
-        driver1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
-                .whenPressed(()->setTurret(turret1.getPosition()-0.1));
-        driver1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
-                .whenPressed(()->setTurret(turret1.getPosition()+0.1));
+                        .whenPressed(()->IO.setHood(IO.hood.getPosition()+0.05));
+        driver1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
+                        .whenPressed(()->IO.setHood(IO.hood.getPosition()-0.05));
+        driver1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT);
+        driver1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT);
+
 
         driver1.getGamepadButton(GamepadKeys.Button.A)
-                .whenPressed(()->coada.setPosition(0.2));
+                .whenPressed(()->coada.setPosition(0.05));
         driver1.getGamepadButton(GamepadKeys.Button.B)
-                .whenPressed(()->coada.setPosition(0.37));
+                .whenPressed(()->coada.setPosition(0.27));
         driver1.getGamepadButton(GamepadKeys.Button.X)
                 .whenPressed(()->coada.setPosition(coada.getPosition()+0.05));
         driver1.getGamepadButton(GamepadKeys.Button.Y)
@@ -113,8 +107,7 @@ public class TestTeleop extends CommandOpMode {
         hubs.forEach(LynxModule::clearBulkCache);
         super.run();
 
-        //IO.targetTurret += IO.tick2rads((int)driver1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) * 2);
-        //IO.targetTurret -= IO.tick2rads((int) (driver1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) * 2));
+
 
 
 //
@@ -123,20 +116,21 @@ public class TestTeleop extends CommandOpMode {
 //        telemetry.addData("Rads2Ticks",IO.rads2ticks(IO.targetTurret));
 //        telemetry.addData("Transform",IO.rads2ticks(IO.tick2rads(IO.getTurretTicks())));
 //        telemetry.addData("Degrees",Math.toDegrees(IO.tick2rads(IO.getTurretTicks())));
-//        telemetry.addData("hood",hood.getPosition());
+        telemetry.addData("hood",hood.getPosition());
 //        telemetry.addData("tur:",turret1.getPosition());
-//        telemetry.addData("coada:",coada.getPosition());
+        telemetry.addData("coada:",coada.getPosition());
+        telemetry.addData("RPM",IO.getRPM());
+        telemetry.addData("targetRPM",IO.targetRPM);
+
 
 
         //IO.update_turret_pid();
+        IO.update_RPM_pid();
         telemetry.update();
 
     }
 
-    public void setTurret(double pos){
-        turret1.setPosition(pos);
-        turret2.setPosition(pos);
-    }
+
     public void setPark(double pos){
         park1.setPosition(pos);
         park2.setPosition(pos);

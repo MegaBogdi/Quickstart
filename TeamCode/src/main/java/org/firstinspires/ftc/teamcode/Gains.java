@@ -6,7 +6,7 @@ import com.bylazar.configurables.annotations.Configurable;
 
 public class Gains {
 
-    public static double POS_EPS=30;
+    public static double POS_EPS=10;
 
 
     @Configurable
@@ -52,28 +52,30 @@ public class Gains {
     public static class TurretGains{
 
         public static int target = 0;
-        public static double tP=0.00022;
+        public static double tP=0.00005;
         public static double tI=0;
-        public static double tD=0.000014;
+        public static double tD=0.000002;
         public static double tS=0.04;
-        public static double tT=0.095;
+        public static double tT=0.03;
         public static double TUR_POS_EPS =30;
         public static double TUR_VEL_EPS =5000;
-        public static int MAX_TICKS =15000;
-        public static int MIN_TICKS =-16000;  //-17500
-
+        public static int MAX_TICKS =17000;
+        public static int MIN_TICKS =-15000;  //-17500
         public static  double TURRET_TOLERANCE = 0.08;
+        public static double testTarget=0;
 
     }
     @Configurable
     public static class RPMGains{
-        public static double kP =0.007;
+        public static double kP =0.012;
         public static double kI =0.0;
         public static double kD =0.0;  // try to keep 0
-        public static double kS = 0.151;   //Static power;
-        public static double kL=0.00004;
-        public static  double kV=0.000185;  // pure feedForward
+        public static double kS = 0.008;   //Static power;
+        public static double kL=0.000043;
+        public static  double kV=0.00017;  // pure feedForward
         public static double RPM_EPS = 30; // RPM TOLERANCE
+        public static double testRPM=3000;
+        public static double testHood=0.27;
     }
 
 

@@ -27,6 +27,7 @@ public class TeleopDrive extends CommandOpMode {
 
         IO = new IOSubsystem(hardwareMap);
         IO.resetEncoder2();
+        IO.resetEncoder();
         telemetry.addLine("done reset...");
         telemetry.update();
 

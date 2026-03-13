@@ -23,7 +23,7 @@ public final class LimePoseSync {
     public static boolean USE_INVERTED_FTC_COORDS = false;
     public static double X_OFFSET_IN = 0.0;
     public static double Y_OFFSET_IN = 0.0;
-    public static double HEADING_OFFSET_DEG = -210.00;
+    public static double HEADING_OFFSET_DEG = -180.00;
     public static double MAX_STALENESS_MS = 120.0;
     public static int MIN_TAGS = 1;
 

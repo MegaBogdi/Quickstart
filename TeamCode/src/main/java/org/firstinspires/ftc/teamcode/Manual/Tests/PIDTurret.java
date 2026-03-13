@@ -55,7 +55,7 @@ public class PIDTurret extends CommandOpMode {
         hubs.forEach(LynxModule::clearBulkCache);
         super.run();
 
-        IO.setTargetTurretRads(Gains.TurretGains.target);
+        IO.setTurretPosRads(Gains.TurretGains.target);
         IO.pidT.setPID(Gains.TurretGains.tP, Gains.TurretGains.tI, Gains.TurretGains.tD);
 
 

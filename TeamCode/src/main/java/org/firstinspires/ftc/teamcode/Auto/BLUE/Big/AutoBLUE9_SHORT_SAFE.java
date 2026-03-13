@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Auto.RED.Small;
+package org.firstinspires.ftc.teamcode.Auto.BLUE.Big;
 
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
@@ -28,17 +28,17 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import java.util.List;
 
 @Configurable
-@Autonomous(name = "AutonomieRED_9_SHORT", group = "Auto Red")
-public class AutoRED9_SHORT_SAFE extends CommandOpMode {
+@Autonomous(name = "AutonomieBLUE_9_SHORT", group = "Auto Blue")
+public class AutoBLUE9_SHORT_SAFE extends CommandOpMode {
     private Pose startPose = new Pose(110.729, 136.523, Math.toRadians(0));
     private Pose shootPos = new Pose(93.907, 85.776, Math.toRadians(0));
-    private Pose spike1Pos = new Pose(127.056, 83.439, Math.toRadians(0));
+    private Pose spike1Pos = new Pose(126.056, 83.439, Math.toRadians(0));
     private Pose preLeverPos = new Pose(124.4766355140187, 79.06542056074768, Math.toRadians(0));
-    private Pose lever2Pos = new Pose(129.93457943925233, 74.46728971962615, Math.toRadians(0));
+    private Pose lever2Pos = new Pose(127.13457943925233, 74.46728971962615, Math.toRadians(0));
     private Pose shootToSpike2ControlPos = new Pose(93.112, 52.958, Math.toRadians(0));
     private Pose spike2Pos = new Pose(133.093, 58.916, Math.toRadians(0));
     private Pose spike2ToLeverControlPos = new Pose(113.051, 66.322, Math.toRadians(0));
-    private Pose leverPos = new Pose(131.215, 69.972, Math.toRadians(0));
+    private Pose leverPos = new Pose(129.13457943925233, 74.46728971962615, Math.toRadians(0));
     private Pose parkPos = new Pose(118.991, 83.187, Math.toRadians(90));
 
     private PathChain startToShootPath;
@@ -73,10 +73,19 @@ public class AutoRED9_SHORT_SAFE extends CommandOpMode {
         follower = Constants.createFollower(hardwareMap);
         IO = new IOSubsystem(hardwareMap);
         register(IO);
-        IO.resetEncoder();
         IO.startLimeLight();
         utils = new Utils(IO, follower);
 
+        startPose = utils.mirror(startPose);
+        shootPos = utils.mirror(shootPos);
+        spike1Pos = utils.mirror(spike1Pos);
+        preLeverPos = utils.mirror(preLeverPos);
+        lever2Pos = utils.mirror(lever2Pos);
+        shootToSpike2ControlPos = utils.mirror(shootToSpike2ControlPos);
+        spike2Pos = utils.mirror(spike2Pos);
+        spike2ToLeverControlPos = utils.mirror(spike2ToLeverControlPos);
+        leverPos = utils.mirror(leverPos);
+        parkPos = utils.mirror(parkPos);
 
         follower.setStartingPose(startPose);
         follower.setPose(startPose);
@@ -85,7 +94,7 @@ public class AutoRED9_SHORT_SAFE extends CommandOpMode {
         telemetryA = PanelsTelemetry.INSTANCE.getTelemetry();
         telemetryA.update(telemetry);
 
-        IO.teamIsRed = true;
+        IO.teamIsRed = false;
 
         timer = new ElapsedTime();
         timer.startTime();
@@ -141,14 +150,14 @@ public class AutoRED9_SHORT_SAFE extends CommandOpMode {
                 .addPath(new BezierCurve(
                         spike2Pos,
                         spike2ToLeverControlPos,
-                        lever2Pos
+                        leverPos
                 ))
                 .setConstantHeadingInterpolation(spike2Pos.getHeading())
                 .build();
 
         leverToShootPath = follower.pathBuilder()
                 .addPath(new BezierLine(
-                        lever2Pos,
+                        leverPos,
                         shootPos
                 ))
                 .setConstantHeadingInterpolation(leverPos.getHeading())
@@ -162,14 +171,15 @@ public class AutoRED9_SHORT_SAFE extends CommandOpMode {
                 .setConstantHeadingInterpolation(shootPos.getHeading())
                 .build();
 
-        
+
+
 
 
         schedule(
                 new RunCommand(() -> {
                     if (IO.jam && !IO.recovering) {
                         IO.recovering = true;
-                        schedule(utils.createRecoverySeq());
+                        schedule(IO.createRecoverySeq());
                     }
                 }),
                 new SequentialCommandGroup(
@@ -183,30 +193,31 @@ public class AutoRED9_SHORT_SAFE extends CommandOpMode {
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new ParallelCommandGroup(
                                 utils.newMotify(1000),
-                                new InstantCommand(() -> IO.setTargetTurretRads(Math.toRadians(-90)))
+                                new InstantCommand(() -> IO.setTurretPosRads(Math.toRadians(90)))
                         ),
-                        utils.newAutoOutake(4500),
+                        utils.newAutoOutake(4500,1),
 
 
                         new FollowPathCommand(follower, shootToSpike1Path)
                                 .beforeStarting(()->IO.setLed(1))
-                                .beforeStarting(() -> follower.setMaxPower(0.45))
+                                .beforeStarting(() -> follower.setMaxPower(0.41))
                                 .alongWith(utils.newStartIntake(4000))
                                 .andThen(utils.newStopIntake())
                                 .andThen(new InstantCommand(()->{if (IO.ocupied()>=3){IO.setLed(0.5);} else {IO.setLed(0.277);}})),
                         new FollowPathCommand(follower, spike1ToPreLeverPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        new FollowPathCommand(follower, preLeverToLeverPath)
+                        new FollowPathCommand(follower, preLeverToLeverPath).withTimeout(800)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new WaitCommand(1500),
                         new FollowPathCommand(follower, leverToShootPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        utils.newAutoOutake(3000),
+                        new WaitCommand(400),
+                        utils.newAutoOutake(3500,1),
 
                         new FollowPathCommand(follower, shootToSpike2Path)
                                 .beforeStarting(()->IO.setLed(1))
                                 .alongWith(utils.newStartIntake(4000))
-                                .beforeStarting(() -> follower.setMaxPower(0.45))
+                                .beforeStarting(() -> follower.setMaxPower(0.41))
                                 .andThen(utils.newStopIntake())
                                 .andThen(new InstantCommand(()->{if (IO.ocupied()>=3){IO.setLed(0.5);} else {IO.setLed(0.277);}})),
                         new FollowPathCommand(follower, spike2ToLeverPath)
@@ -214,13 +225,12 @@ public class AutoRED9_SHORT_SAFE extends CommandOpMode {
                         new WaitCommand(1500),
                         new FollowPathCommand(follower, leverToShootPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        utils.newAutoOutake(3000),
-
-
+                        new WaitCommand(400),
+                        utils.newAutoOutake(3500,2),
 
                         new FollowPathCommand(follower, shootToParkPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
-                        new InstantCommand(()->IO.setTargetTurretRads(0)),
+                        new InstantCommand(()->IO.setTurretPosRads(0)),
                         new InstantCommand(() -> {SharedUtils.sharedPose = follower.getPose(); IO.setLed(0.722);})
                 )
         );
@@ -253,11 +263,6 @@ public class AutoRED9_SHORT_SAFE extends CommandOpMode {
     }
 
 }
-
-
-
-
-
 
 
 

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Auto.BLUE.Big;
+package org.firstinspires.ftc.teamcode.Auto.BLUE.Small;
 
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
@@ -195,7 +195,7 @@ public class AutoBLUE12_FAR_RASCHETARE extends CommandOpMode {
                 new RunCommand(() -> {
                     if (IO.jam && !IO.recovering) {
                         IO.recovering = true;
-                        schedule(utils.createRecoverySeq());
+                        schedule(IO.createRecoverySeq());
                     }
                 }),
                 new SequentialCommandGroup(
@@ -207,9 +207,9 @@ public class AutoBLUE12_FAR_RASCHETARE extends CommandOpMode {
                         }),
                         new ParallelCommandGroup(
                                 utils.newMotify(1000),
-                                new InstantCommand(() -> IO.setTargetTurretRads(Math.toRadians(90)))
+                                new InstantCommand(() -> IO.setTurretPosRads(Math.toRadians(90)))
                         ),
-                        utils.newAutoOutake(5000),
+                        utils.newAutoOutake(5000,1),
 
                         new FollowPathCommand(follower, shootFarToPreHumanPath)
                                 .beforeStarting(() -> follower.setMaxPower(0.7)),
@@ -219,7 +219,7 @@ public class AutoBLUE12_FAR_RASCHETARE extends CommandOpMode {
                                 .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, humanToShootFarPath)
                                 .beforeStarting(() -> follower.setMaxPower(0.9)),
-                        utils.newAutoOutake(4500),
+                        utils.newAutoOutake(4500,2),
                         new WaitCommand(3000),
                         new FollowPathCommand(follower, shootFarToPreHumanPath)
                                 .beforeStarting(() -> follower.setMaxPower(0.7)),
@@ -229,7 +229,7 @@ public class AutoBLUE12_FAR_RASCHETARE extends CommandOpMode {
                                 .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, humanToShootFarPath)
                                 .beforeStarting(() -> follower.setMaxPower(0.9)),
-                        utils.newAutoOutake(4500),
+                        utils.newAutoOutake(4500,4),
 //                        new FollowPathCommand(follower, shootFarToPreHumanPath)
 //                                .beforeStarting(() -> follower.setMaxPower(0.7)),
 //                        new FollowPathCommand(follower, preHumanToHumanPath)
@@ -254,9 +254,9 @@ public class AutoBLUE12_FAR_RASCHETARE extends CommandOpMode {
                                 .andThen(utils.newStopIntake()),
                         new FollowPathCommand(follower, hope2ToShootFarPath)
                                 .beforeStarting(()->follower.setMaxPower(0.9)),
-                        utils.newAutoOutake(3000),
+                        utils.newAutoOutake(3000,4),
 
-                        new InstantCommand(()->IO.setTargetTurretRads(0)),
+                        new InstantCommand(()->IO.setTurretPosRads(0)),
                         new FollowPathCommand(follower, shootFarToParkPath)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new InstantCommand(() -> {SharedUtils.sharedPose = follower.getPose();})
