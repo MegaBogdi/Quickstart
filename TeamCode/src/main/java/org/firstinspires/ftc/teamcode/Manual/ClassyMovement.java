@@ -138,13 +138,13 @@ public class ClassyMovement extends CommandOpMode {
         );
 
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
-                .whenPressed(()->IO.setMotorRPM(0));
+                .whenPressed(()->IO.setTurretPosRads(IO.targetTurret-Math.toRadians(20)));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
-                .whenPressed(()->IO.setMotorRPM(IO.targetRPM-500));
+                .whenPressed(()->temporary());
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whenPressed(()->IO.setMotorRPM(IO.targetRPM+500));
         driver1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
-                .whenPressed(()->IO.setMotorRPM(3000));
+                .whenPressed(()->IO.setTurretPosRads(IO.targetTurret+Math.toRadians(20)));
 
 
 
@@ -155,15 +155,33 @@ public class ClassyMovement extends CommandOpMode {
                 new InstantCommand(()->{IO.two_spin();IO.pastPos=IO.sorter.getCurrentPosition();}),
                 new WaitUntilCommand(()->IO.isOneRevPast()),
                 new InstantCommand(()->IO.setCoada(IO.COADA_MAX_LIMIT)),
+                new WaitUntilCommand(()->IO.isSorterReady()),
                 new ParallelDeadlineGroup(
                         new WaitUntilCommand(()->IO.isSorterReady()),
                         new RunCommand(()-> ladderInterp()),
-                        new RunCommand(()->autoAimF())
+                        new RunCommand(()->autoAimF()),
+                        new InstantCommand(()->{})
                 ),
                 new InstantCommand(()->{IO.setCoada(IO.COADA_MIN_LIMIT);LimePoseSync.sync(follower, IO.lime, -IO.tick2rads(IO.getTurretPos()));}),   //LimePoseSync.sync(follower, IO.lime, -IO.tick2rads(IO.getTurretPos()));
                 new InstantCommand(()->{IO.ALL[0]=0;IO.ALL[1]=0;IO.ALL[2]=0;stopAutoOutakeF();})
 
         );
+
+
+//        Command autoOutake_ = new SequentialCommandGroup(
+//                new InstantCommand(()->IO.setCoada(IO.COADA_MAX_LIMIT)),
+//                new ParallelDeadlineGroup(new WaitUntilCommand(()->IO.isRPMready()),new RunCommand(()->interpF()),new RunCommand(()->autoAimF())),
+//                new WaitCommand(300),
+//                new InstantCommand(()->{IO.two_spin();}),
+//                new ParallelDeadlineGroup(
+//                        new WaitUntilCommand(()->IO.isSorterReady()),
+//                        new RunCommand(()-> ladderInterp()),
+//                        new RunCommand(()->autoAimF())
+//                ),
+//                new InstantCommand(()->{IO.setCoada(IO.COADA_MIN_LIMIT);LimePoseSync.sync(follower, IO.lime, -IO.tick2rads(IO.getTurretPos()));}),   //LimePoseSync.sync(follower, IO.lime, -IO.tick2rads(IO.getTurretPos()));
+//                new InstantCommand(()->{IO.ALL[0]=0;IO.ALL[1]=0;IO.ALL[2]=0;stopAutoOutakeF();})
+//
+//        );
 
 
         driver1.getGamepadButton(GamepadKeys.Button.X)
@@ -351,12 +369,14 @@ public class ClassyMovement extends CommandOpMode {
         IO.update_sep_pid(timer.seconds());
         IO.update_RPM_pid();
         IO.update_turret_pid();
+        //if (IO.ocupied()>=1){IO.setMotorRPM(2500);}
+
         if (IO.ocupied()>=1){windUp();}
 
         double heading = follower.getPose().getHeading();
         telemetryA.addData("angle error", Math.toDegrees(IO.testTurretReady(IO.getAngle(follower.getPose()),follower)));
         telemetryA.addData("heading", Math.toDegrees(follower.getPose().getHeading()));
-        chassis.updateSpeeds(driver1.getLeftY(), driver1.getLeftX(), driver1.getRightX(), heading - headingOffset + Math.toRadians(90));
+        chassis.updateSpeeds(driver1.getLeftY(), driver1.getLeftX(), driver1.getRightX() , heading - headingOffset + Math.toRadians(90));  //driver1.getRightX()
         telemetryA.addData("x",follower.getPose().getX());
         telemetryA.addData("y",follower.getPose().getY());
         telemetryA.addData("isTurretReady",IO.isTurretReady(alpha,follower));
@@ -367,8 +387,7 @@ public class ClassyMovement extends CommandOpMode {
         //telemetryA.addData("turret",IO.turret1.getPosition());
         //telemetryA.addData("proxim",IO.getProxim());
         //telemetryA.debug(String.format("ALL: 0=%d | 1=%d | 2=%d", IO.ALL[0], IO.ALL[1], IO.ALL[2]));
-
-
+        //chassis.powerTest(0.5);
 
 
 //        telemetryA.debug(String.format("SORTER: target=%.4f  pos=%.4f  error=%.4f",
@@ -408,14 +427,13 @@ public class ClassyMovement extends CommandOpMode {
             interpValues = IO.getInterpolatedValues(IO.getDistanceOdom(follower.getPose()));
             IO.setHood(interpValues[1]);
             IO.setMotorRPM(interpValues[0]);
-
         }
     }
     public void stopAutoOutakeF(){
         if (IO.ocupied()<1) {
             IO.setMotorRPM(0);
             IO.setHood(IO.SERVO_MIN_LIMIT);
-            IO.setTurretPosRads(0);
+            //IO.setTurretPosRads(0);
         }
     }
 
@@ -446,6 +464,9 @@ public class ClassyMovement extends CommandOpMode {
     }
 
 
+    public void temporary(){
+        if(IO.targetRPM>0){IO.targetRPM-=500;}
+    }
 }
 
 

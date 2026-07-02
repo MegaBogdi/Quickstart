@@ -22,7 +22,8 @@ import org.firstinspires.ftc.teamcode.Subsystems.IOSubsystem;
 public class Utils {
     Follower follower;
     IOSubsystem IO;
-    double[] interpValues;
+    public double[] interpValues = {0,0};
+
     public Utils(IOSubsystem IO, Follower follower){
         this.IO = IO;
         this.follower = follower;
@@ -32,17 +33,19 @@ public class Utils {
     public int id;
     public int motif=0;
 
+    public boolean intake_active=false;
+
 
 
     public Command newAutoOutake(int timeout,int spike){
         return new SequentialCommandGroup(
-                new ParallelDeadlineGroup(new WaitUntilCommand(()->IO.isRPMready()),new RunCommand(()->interp()),new RunCommand(()->autoAim()),new InstantCommand(()->{IO.expel_intake();})),
-                new ParallelDeadlineGroup(new WaitUntilCommand(()->IO.isSorterReady()),new InstantCommand(()->{IO.stop_intake();IO.shiftSorterTarget(IO.space*(motifData[spike-1][motif]));})),
+                //new ParallelDeadlineGroup(new WaitUntilCommand(()->IO.isRPMready()),new RunCommand(()->interp()),new RunCommand(()->autoAim()),new InstantCommand(()->{IO.expel_intake();})),
+                //new ParallelDeadlineGroup(new WaitUntilCommand(()->IO.isSorterReady()),new InstantCommand(()->{IO.stop_intake();IO.shiftSorterTarget(IO.space*(motifData[spike-1][motif]));})),
                 new InstantCommand(()->{IO.stop_intake();IO.two_spin();IO.pastPos=IO.sorter.getCurrentPosition();}),
                 new WaitUntilCommand(()->IO.isOneRevPast()),
                 new InstantCommand(()->IO.setCoada(IO.COADA_MAX_LIMIT)),
                 new ParallelDeadlineGroup(
-                        new WaitUntilCommand(()->IO.isSorterReady()),
+                        new WaitUntilCommand(()->IO.isSorterReadyOff(IO.space*4)),
                         new RunCommand(()-> ladderInterp()),
                         new RunCommand(()->autoAim())
                 ).withTimeout(timeout),
@@ -77,7 +80,7 @@ public class Utils {
     public void stopAutoOutake(){
         IO.setMotorRPM(2300);
         IO.setHood(IO.SERVO_MIN_LIMIT);
-        IO.setTurretPosRads(IO.teamIsRed? Math.toRadians(-90):Math.toRadians(90));
+        IO.setTurretPosRads(IO.teamIsRed? Math.toRadians(-90):Math.toRadians(90-10));
         IO.setCoada(IO.COADA_MIN_LIMIT);
     }
 
@@ -90,11 +93,13 @@ public class Utils {
             IO.stop_intake();
             IO.close();
             IO.setPush(0);
+            intake_active = false;
+
         });
 
         return
                 new SequentialCommandGroup(
-                        new InstantCommand(()->{IO.open();IO.set_intake(0.9);}),
+                        new InstantCommand(()->{IO.open();IO.set_intake(0.9);intake_active=true;}),
                         new ParallelDeadlineGroup(
                                 new WaitUntilCommand(()->IO.ocupied() >= 3),  // while not full
                                 new RepeatCommand(new ConditionalCommand( // if ball incoming

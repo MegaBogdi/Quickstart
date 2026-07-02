@@ -28,6 +28,7 @@ public class TeleopDrive extends CommandOpMode {
         IO = new IOSubsystem(hardwareMap);
         IO.resetEncoder2();
         IO.resetEncoder();
+        IO.setCoada(IO.COADA_MAX_LIMIT);
         telemetry.addLine("done reset...");
         telemetry.update();
 
@@ -35,6 +36,7 @@ public class TeleopDrive extends CommandOpMode {
 
     @Override
     public void run() {
+        IO.setCoada(IO.COADA_MIN_LIMIT);
         hubs.forEach(LynxModule::clearBulkCache);
         super.run();
 

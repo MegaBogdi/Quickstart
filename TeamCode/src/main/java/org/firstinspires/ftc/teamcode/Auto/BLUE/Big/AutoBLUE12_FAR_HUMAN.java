@@ -51,6 +51,8 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
     private PathChain preHumanToHumanPath;
     private PathChain humanToShootFarPath;
     private PathChain shootFarToParkPath;
+    private PathChain startToShootFarPath;
+
 
     private List<LynxModule> hubs;
 
@@ -109,6 +111,15 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
                         startPose,
                         preSpike2Pos))
                 .setConstantHeadingInterpolation(Math.toRadians(180))
+                .setBrakingStrength(1)
+                .setBrakingStart(1)
+                .build();
+
+        startToShootFarPath = follower.pathBuilder()
+                .addPath(new BezierLine(
+                        startPose,
+                        shootFarPos))
+                .setConstantHeadingInterpolation(startPose.getHeading())
                 .setBrakingStrength(1)
                 .setBrakingStart(1)
                 .build();
@@ -211,7 +222,8 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
                                 utils.newMotify(1000),
                                 new InstantCommand(() -> IO.setTurretPosRads(Math.toRadians(90)))
                         ),
-                        utils.newAutoOutake(5000,2),
+                        utils.newAutoOutake(4000,2),
+
                         new FollowPathCommand(follower, startToPreSpike2Path).beforeStarting(()->follower.setMaxPower(1)),
                         new FollowPathCommand(follower, preSpike2ToSpike2Path)
                                 .beforeStarting(() -> follower.setMaxPower(0.41))
@@ -224,6 +236,7 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new WaitCommand(400),
                         utils.newAutoOutake(4500,2),
+                        //new FollowPathCommand(follower,startToShootFarPath),
 
                         new FollowPathCommand(follower, shootFarToSpike3Path)
                                 .beforeStarting(() -> follower.setMaxPower(0.41))
@@ -234,7 +247,7 @@ public class AutoBLUE12_FAR_HUMAN extends CommandOpMode {
                         new WaitCommand(300),
                         utils.newAutoOutake(3000,3),
 
-                        new FollowPathCommand(follower, shootFarToPreHumanPath)
+                        new FollowPathCommand(follower, shootFarToPreHumanPath).withTimeout(2000)
                                 .beforeStarting(() -> follower.setMaxPower(0.7)),
                         new FollowPathCommand(follower, preHumanToHumanPath).withTimeout(4000)
                                 .beforeStarting(() -> follower.setMaxPower(0.43))

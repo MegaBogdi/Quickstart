@@ -17,6 +17,7 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Auto.SharedUtils;
@@ -26,7 +27,7 @@ import org.firstinspires.ftc.teamcode.Subsystems.commands.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import java.util.List;
-
+@Disabled
 @Configurable
 @Autonomous(name = "AutonomieRED_12_FAR_MOTIF_SAFE", group = "Auto Red")
 public class AutoRED12_FAR_MOTIF_SAFE extends CommandOpMode {

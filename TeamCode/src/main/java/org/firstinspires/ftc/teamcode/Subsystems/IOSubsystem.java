@@ -97,10 +97,12 @@ public class IOSubsystem extends SubsystemBase {
     public double PUSH_MAX_LIMIT = 0.1711;
     public double COADA_MIN_LIMIT = 0.05; // 0.2!!!
     public double COADA_MAX_LIMIT = 0.27; // 0.37!!!   0.17 dif!!!!
+    public double COADA_UNDER_LIMIT = 0.02; // 0.37!!!   0.17 dif!!!!
 
     private double jamStart;
     public boolean jam;
     public boolean recovering;
+    public boolean recived;
 
     private PIDController pid;
     public PIDController pidT;
@@ -118,6 +120,9 @@ public class IOSubsystem extends SubsystemBase {
     private double sorterProfileT3 = 0.0;
     private double sorterProfilePeakV = 0.0;
     private double sorterProfileAccelDist = 0.0;
+
+    public double last_recived;
+
 
 
     private VoltageSensor myControlHubVoltageSensor;
@@ -263,25 +268,26 @@ public class IOSubsystem extends SubsystemBase {
     };*/
 
     double[][] shootingData_ = {
-            {108,2130,0},
-            {200,2530,0.2},
-            {231, 2600, 0.2},
-            {312,3100,0.34},  // 3000 0.23
-            {343,3250,0.34},   //3150   0.27 | 3250
-            {360,3400+100,0.34},
-            {388,3550+100,0.34}    //3400   0.27  | 3500
-    };
+    {108,2130,0},
+    {200,2530,0.2},
+    {231, 2600, 0.2},
+    {312,3100,0.34},  // 3000 0.23
+    {343,3250,0.34},   //3150   0.27 | 3250
+    {360,3400+100,0.34},
+    {388,3550+100,0.34}    //3400   0.27  | 3500
+};
 
     double[][] shootingData = {
-            {108,2130,0.25},
-            {200,2530,0.45},
-            {231,2600,0.45},
-            {316,3030,0.45},
-            {344,3150,0.45},
-            {360,3250,0.45},
-            {380,3365,0.45}
+    {108,2130,0.25},
+    {170,2430,0.29 },
+    {200,2530,0.35},
+    {231,2600,0.45},
+    {316,3030,0.45},
+    {344,3150,0.45},
+    {360,3250,0.45},
+    {380,3365,0.45}
 
-    };
+};
 
 
 
@@ -426,7 +432,7 @@ public class IOSubsystem extends SubsystemBase {
         launcher2.setPower(power);
     }
 
-// ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL
+    // ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL ANGLE FLYWHEEL
     public void setNormalizedAngle(double rawAngle) {
 
         rawAngle = clamp(rawAngle, SERVO_MIN_LIMIT, SERVO_MAX_LIMIT);
@@ -437,6 +443,9 @@ public class IOSubsystem extends SubsystemBase {
 
     public void setTurretPosRads(double rads){
         targetTurret = rads;
+    }
+    public void modifTurretPosRads(double dRads){
+        targetTurret += dRads;
     }
 
 
@@ -495,7 +504,7 @@ public class IOSubsystem extends SubsystemBase {
         return tick * (Math.PI * 2) / ratio / 8192.0;
     }
     public int getTurretPos(){
-       return -launcher1.getCurrentPosition();
+        return -launcher1.getCurrentPosition();
     }
     public double getTurretVelocity(){
         return launcher1.getVelocity();
@@ -609,7 +618,7 @@ public class IOSubsystem extends SubsystemBase {
         int count = 0;
         for(int ball:ALL){
             if (ball != 0){
-            count += 1;}
+                count += 1;}
         }
         return count;
     }
@@ -623,6 +632,7 @@ public class IOSubsystem extends SubsystemBase {
 
     public void regist(){
         ALL[0] = readSensor();
+        recived =true;
     }
     public void regist_release(){
         ALL[1] = 0;
@@ -651,13 +661,43 @@ public class IOSubsystem extends SubsystemBase {
         } else {return false;}
 
     }
+    public boolean isSorterReadyOff(double offset){
+        if (Math.abs(sorter.getCurrentPosition()-targetPos)-offset< SORT_POS_EPS+60){
+            return true;
+        } else {return false;}
+
+    }
     public boolean isOneRevPast(){
         if  (Math.abs(pastPos-sorter.getCurrentPosition())>=space){
             return true;
         } else {return false;}
     }
+
+    public boolean isIntakeLate( double time){
+        if (recived){
+            recived = false;
+            last_recived = time;
+            return false;
+        }
+        if ((time - last_recived) >1200){return true;}
+        return false;
+    }
+    public void resetTime(double time){
+        last_recived = time;
+    }
+
     public void rectify(){
         shiftSorterTarget(space/2);
+    }
+
+    double MAX_SORTER_VEL = 24000;
+
+    public static double SPACE_MULTIPLIER = 7;
+
+    public double getCoadaOffset()
+    {
+        return (space/SPACE_MULTIPLIER) - ((Math.abs(sorter.getVelocity()) / MAX_SORTER_VEL) * (space/SPACE_MULTIPLIER));
+
     }
 
 
@@ -897,6 +937,8 @@ public class IOSubsystem extends SubsystemBase {
         setLauncherPower(output);
     }
 
+
+
     public void testThePower(double power){
         setLauncherPower(power);
     }
@@ -923,6 +965,8 @@ public class IOSubsystem extends SubsystemBase {
 // 207 gear mare
     //90 gear servo
     //44 gear encoder
+
+    //multe lacrimi au napustit aspura acestui laptop in incercarea de a crea o lume mai buna, dar in final ne bagam oula in el robot si in tine angajator 2026 (2.5 ani inainte sa faca chatgpt codul de la 0 perfect)
 
 
 }

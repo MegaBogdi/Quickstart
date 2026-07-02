@@ -98,9 +98,9 @@ public class DriveSubsystem extends SubsystemBase {
     public void powerTest(double rx){
         //double rx = 1;
         FL.setPower(rx);
-        BL.setPower(rx);
-        FR.setPower(-rx);
-        BR.setPower(-rx);
+         BL.setPower(rx);
+        //FR.setPower(-rx);
+        //BR.setPower(-rx);
     }
 
     public int testProbe(){

@@ -54,6 +54,7 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
     private PathChain preHumanToHumanPath;
     private PathChain humanToShootFarPath;
     private PathChain shootFarToParkPath;
+    private PathChain startToShootFarPath;
 
     private List<LynxModule> hubs;
 
@@ -112,6 +113,14 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
                 .addPath(new BezierLine(
                         startPose,
                         preSpike2Pos))
+                .setConstantHeadingInterpolation(startPose.getHeading())
+                .setBrakingStrength(1)
+                .setBrakingStart(1)
+                .build();
+        startToShootFarPath = follower.pathBuilder()
+                .addPath(new BezierLine(
+                        startPose,
+                        shootFarPos))
                 .setConstantHeadingInterpolation(startPose.getHeading())
                 .setBrakingStrength(1)
                 .setBrakingStart(1)
@@ -205,13 +214,14 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
                             IO.ALL[0] = 1;
                             IO.ALL[1] = 2;
                             IO.ALL[2] = 1;
-                            //IO.offsetGoal(true, 10, -5);
+                            IO.offsetGoal(true, 8, 0);
                         }),
                         new ParallelCommandGroup(
                                 utils.newMotify(1000),
                                 new InstantCommand(() -> IO.setTurretPosRads(Math.toRadians(-90)))
                         ),
-                        utils.newAutoOutake(5000, 2),
+                        utils.newAutoOutake(3000, 2),
+
                         new FollowPathCommand(follower, startToPreSpike2Path)
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new FollowPathCommand(follower, preSpike2ToSpike2Path)
@@ -225,6 +235,8 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new WaitCommand(400),
                         utils.newAutoOutake(4500, 2),
+
+                        //new FollowPathCommand(follower,startToShootFarPath),
 
                         new FollowPathCommand(follower, shootFarToSpike3Path)
                                 .beforeStarting(() -> follower.setMaxPower(0.41))
@@ -251,7 +263,7 @@ public class AutoRED12_FAR_HUMAN extends CommandOpMode {
                                 .beforeStarting(() -> follower.setMaxPower(1)),
                         new InstantCommand(() -> {
                             SharedUtils.sharedPose = follower.getPose();
-                            //IO.offsetGoal(true, 10,-5);
+                            IO.offsetGoal(true, -8,0);
                         })
                 )
         );

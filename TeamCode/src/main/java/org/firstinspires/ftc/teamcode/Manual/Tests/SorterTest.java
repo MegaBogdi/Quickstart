@@ -17,7 +17,7 @@ import org.firstinspires.ftc.teamcode.TrapezoidProfile;
 import java.util.List;
 
 import dev.frozenmilk.dairy.cachinghardware.CachingDcMotorEx;
-@Disabled
+
 @Configurable
 @TeleOp(name = "SorterTest",group="Tests")
 public class SorterTest extends CommandOpMode {
